@@ -1244,6 +1244,7 @@ function renderCard(p,own=false){
     <div class="actions">
       ${own?`<button id="download">Download Card</button>`:""}
       <button class="secondary" id="share">Share Dossier</button>
+        <button class="secondary" id="join-campaign">Join Campaign</button>
       <button class="dark" id="home">New Intake</button>
     </div>
   </section>`;

@@ -1,176 +1,23 @@
-const app = document.querySelector("#app");
-const saved = JSON.parse(localStorage.getItem("dungeonPlayer") || "null");
-
-const state = {
-  code: saved?.code || "",
-  number: saved?.num || "",
-  player: null,
-  campaign: null,
-  event: null,
-  timer: null
-};
-
-const escapeHtml = (value = "") => String(value)
-  .replaceAll("&", "&amp;")
-  .replaceAll("<", "&lt;")
-  .replaceAll(">", "&gt;")
-  .replaceAll('"', "&quot;")
-  .replaceAll("'", "&#39;");
-
-async function api(action, payload = {}) {
-  const response = await fetch("/.netlify/functions/game-api", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action, ...payload })
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || "Dungeon connection failed.");
-  return data;
-}
-
-function stopPolling() {
-  if (state.timer) clearInterval(state.timer);
-  state.timer = null;
-}
-
-function startPolling() {
-  stopPolling();
-  refresh();
-  state.timer = setInterval(refresh, 3000);
-}
-
-function renderJoin(error = "") {
-  stopPolling();
-  app.innerHTML = `
-    <section class="panel">
-      <h1>JOIN THE<br><span>DUNGEON</span></h1>
-      ${error ? `<p>${escapeHtml(error)}</p>` : ""}
-      <label>Campaign code<input id="campaign-code" value="${escapeHtml(state.code)}"></label>
-      <label>Crawler number<input id="crawler-number" inputmode="numeric" value="${escapeHtml(state.number)}"></label>
-      <button id="join-game">Connect Crawler</button>
-    </section>`;
-
-  const button = document.querySelector("#join-game");
-  button.addEventListener("click", async () => {
-    const code = document.querySelector("#campaign-code").value.trim().toUpperCase();
-    const number = Number(document.querySelector("#crawler-number").value.replace(/\D/g, ""));
-    if (!code || !number) return;
-    button.disabled = true;
-
-    try {
-      const data = await api("join", { campaignCode: code, crawlerNumber: number });
-      Object.assign(state, {
-        code,
-        number,
-        player: data.player,
-        campaign: data.campaign,
-        event: data.event
-      });
-      localStorage.setItem("dungeonPlayer", JSON.stringify({ code, num: number }));
-      render();
-      startPolling();
-    } catch (error) {
-      renderJoin(error.message);
-    }
-  });
-}
-
-async function refresh() {
-  try {
-    const data = await api("state", {
-      campaignCode: state.code,
-      crawlerNumber: Number(state.number)
-    });
-    Object.assign(state, {
-      player: data.player,
-      campaign: data.campaign,
-      event: data.event
-    });
-    render();
-  } catch (error) {
-    renderJoin(error.message);
-  }
-}
-
-function header() {
-  const hp = state.player?.hp || 0;
-  const max = state.player?.max_hp || 1;
-  return `<div class="status"><div><div class="num">Crawler #${Number(state.number).toLocaleString()}</div><b>${escapeHtml(state.player?.crawler_name || "Connecting")}</b></div><div class="hp">HP ${hp}/${max}<div class="bar"><i style="width:${Math.max(0, Math.min(100, hp / max * 100))}%"></i></div></div></div>`;
-}
-
-function render() {
-  if (!state.player || !state.campaign) {
-    app.innerHTML = `<section class="panel waiting"><h2>CONNECTING</h2><div class="pulse"></div></section>`;
-    return;
-  }
-
-  let body;
-  if (state.campaign.status === "waiting" && !state.event) {
-    body = `<section class="panel waiting"><h2>WAITING ROOM</h2><p>Campaign <b>${escapeHtml(state.code)}</b></p><div class="pulse"></div><div class="party">${(state.campaign.players || []).map(player => `<div><span>${escapeHtml(player.crawler_name)}</span><b>#${player.crawler_number}</b></div>`).join("")}</div></section>`;
-  } else if (!state.event) {
-    body = `<section class="panel waiting"><h2>WAITING FOR THE DUNGEON</h2><div class="pulse"></div></section>`;
-  } else {
-    body = renderEvent(state.event);
-  }
-
-  app.innerHTML = header() + body;
-  wireEvent(state.event);
-}
-
-function renderEvent(event) {
-  const payload = event.payload || {};
-  if (event.type === "broadcast") return `<section class="panel"><div class="broadcast"><b>ATTENTION, CRAWLERS</b><h2>${escapeHtml(payload.title)}</h2><p>${escapeHtml(payload.text)}</p></div></section>`;
-  if (event.type === "narration") return `<section class="panel"><h2>${escapeHtml(payload.title)}</h2><p>${escapeHtml(payload.text)}</p></section>`;
-  if (event.type === "choice") {
-    const vote = payload.votes?.[String(state.number)];
-    return `<section class="panel"><h2>${escapeHtml(payload.title)}</h2><p>${escapeHtml(payload.text)}</p><div class="choices">${(payload.options || []).map((option, index) => `<button class="${Number(vote) === index ? "sel" : ""}" data-choice="${index}">${String.fromCharCode(65 + index)}. ${escapeHtml(option)}</button>`).join("")}</div></section>`;
-  }
-  if (event.type === "check") {
-    const result = payload.results?.[String(state.number)];
-    return `<section class="panel"><h2>${escapeHtml(payload.title)}</h2><p>${escapeHtml(payload.text)}</p>${result ? `<div class="result"><span>${escapeHtml(result.stat)} Check</span><strong>${result.total}</strong><p>${result.success ? "SUCCESS" : "FAILURE"}</p></div>` : `<button id="roll-check">Roll ${escapeHtml(payload.stat)}</button>`}</section>`;
-  }
-  if (event.type === "combat") {
-    const enemy = payload.enemy || {};
-    return `<section class="panel"><h2>${escapeHtml(enemy.name)}</h2><p>${escapeHtml(enemy.description)}</p><div class="card">Enemy HP ${enemy.hp}/${enemy.maxHp}</div>${state.player.hp > 0 && enemy.hp > 0 ? `<div class="combat"><button data-action="attack">Attack</button><button class="alt" data-action="defend">Defend</button><button data-action="ability">Class Ability</button><button class="alt" data-action="improvise">Improvise</button></div>` : ""}<div class="log">${(payload.log || []).slice(-12).reverse().map(line => `<p>${escapeHtml(line)}</p>`).join("")}</div></section>`;
-  }
-  if (event.type === "loot") {
-    const claimed = (payload.claimedBy || []).includes(Number(state.number));
-    return `<section class="panel"><h2>${escapeHtml(payload.title)}</h2><div class="loot"><span>${escapeHtml(payload.rarity)}</span><strong>${escapeHtml(payload.item?.name)}</strong><p>${escapeHtml(payload.item?.description)}</p></div>${claimed ? "<p>ITEM ADDED TO INVENTORY</p>" : `<button id="claim-loot">Claim Loot</button>`}</section>`;
-  }
-  return `<section class="panel"><div class="broadcast"><b>FLOOR COMPLETE</b><h2>${escapeHtml(payload.title)}</h2><p>${escapeHtml(payload.text)}</p></div></section>`;
-}
-
-function wireEvent(event) {
-  if (!event) return;
-  document.querySelectorAll("[data-choice]").forEach(button => {
-    button.addEventListener("click", async () => {
-      button.disabled = true;
-      await api("vote", { campaignCode: state.code, crawlerNumber: Number(state.number), eventId: event.id, choice: Number(button.dataset.choice) });
-      await refresh();
-    });
-  });
-
-  const rollButton = document.querySelector("#roll-check");
-  if (rollButton) rollButton.addEventListener("click", async () => {
-    rollButton.disabled = true;
-    await api("roll", { campaignCode: state.code, crawlerNumber: Number(state.number), eventId: event.id });
-    await refresh();
-  });
-
-  document.querySelectorAll("[data-action]").forEach(button => {
-    button.addEventListener("click", async () => {
-      button.disabled = true;
-      await api("act", { campaignCode: state.code, crawlerNumber: Number(state.number), eventId: event.id, actionType: button.dataset.action });
-      await refresh();
-    });
-  });
-
-  const claimButton = document.querySelector("#claim-loot");
-  if (claimButton) claimButton.addEventListener("click", async () => {
-    claimButton.disabled = true;
-    await api("claim", { campaignCode: state.code, crawlerNumber: Number(state.number), eventId: event.id });
-    await refresh();
-  });
-}
-
-if (state.code && state.number) startPolling(); else renderJoin();
+const app=document.querySelector("#app");
+const saved=JSON.parse(localStorage.getItem("dungeonPlayer")||"null");
+const queryCrawler=new URLSearchParams(location.search).get("crawler");
+const s={code:saved?.code||"",num:queryCrawler||saved?.num||"",player:null,campaign:null,event:null,timer:null,busy:false};
+const e=(v="")=>String(v).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#39;");
+async function api(action,x={}){let r=await fetch("/.netlify/functions/director-api",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action,...x})}),d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||"Dungeon connection failed.");return d}
+function join(err=""){clearInterval(s.timer);app.innerHTML=`<section class="panel"><div class="warning"><span>DungeonOS Campaign Access</span></div><h1>JOIN THE<br><span>DUNGEON</span></h1>${err?`<div class="error">${e(err)}</div>`:""}<label>Campaign code<input id="campaign-code" value="${e(s.code)}"></label><label>Crawler number<input id="crawler-number" inputmode="numeric" value="${e(s.num)}"></label><button id="join-button">Connect Crawler</button><p class="small">Your crawler must already exist in Crawler Intake.</p></section>`;document.querySelector("#join-button").onclick=async()=>{let b=document.querySelector("#join-button");b.disabled=true;try{let code=document.querySelector("#campaign-code").value.trim().toUpperCase(),num=Number(document.querySelector("#crawler-number").value.replace(/\D/g,""));let d=await api("join",{campaignCode:code,crawlerNumber:num});Object.assign(s,{code,num,player:d.player,campaign:d.campaign,event:d.event});localStorage.setItem("dungeonPlayer",JSON.stringify({code,num}));render();poll()}catch(x){join(x.message)}}}
+function poll(){clearInterval(s.timer);refresh();s.timer=setInterval(refresh,3000)}
+async function refresh(){if(s.busy)return;try{let d=await api("state",{campaignCode:s.code,crawlerNumber:Number(s.num)});Object.assign(s,{player:d.player,campaign:d.campaign,event:d.event});render()}catch(x){join(x.message)}}
+function head(){let p=s.player,h=p?.hp||0,m=p?.max_hp||1,conditions=Array.isArray(p?.conditions)?p.conditions:[];return `<div class="status"><div><div class="num">Crawler #${Number(s.num).toLocaleString()}</div><b>${e(p?.crawler_name||"Connecting")}</b><div class="meta-row"><span class="chip">${e(p?.profile?.race||"Unknown Race")}</span><span class="chip">${e(p?.profile?.className||"Unknown Class")}</span>${conditions.map(c=>`<span class="chip">${e(c)}</span>`).join("")}</div></div><div class="hp">HP ${h}/${m}<div class="bar"><i style="width:${Math.max(0,Math.min(100,h/m*100))}%"></i></div><div>${Number(p?.gold||0)} GOLD</div></div></div>`}
+function render(){if(!s.player||!s.campaign){app.innerHTML=`<section class="panel waiting"><h2>CONNECTING</h2><div class="pulse"></div></section>`;return}let ev=s.event,b="";if(s.campaign.status==="waiting"&&!ev)b=waiting();else if(!ev)b=`<section class="panel waiting"><h2>THE DUNGEON IS THINKING</h2><div class="pulse"></div><p>This is rarely good news.</p></section>`;else b=view(ev);app.innerHTML=head()+b;wire(ev)}
+function waiting(){return `<section class="panel waiting"><div class="warning"><span>Campaign Connected</span></div><h2>WAITING ROOM</h2><p>Campaign <b>${e(s.code)}</b></p><div class="pulse"></div><div class="party">${(s.campaign.players||[]).map(p=>`<div><span>${e(p.crawler_name)}</span><b>#${Number(p.crawler_number).toLocaleString()}</b></div>`).join("")}</div><p class="small">DungeonOS will begin automatically when the Administrator starts the episode.</p></section>`}
+function remaining(ev){if(!ev?.resolves_at)return"";let t=Math.max(0,Math.ceil((new Date(ev.resolves_at)-Date.now())/1000));return `<div class="countdown">${t}s</div>`}
+function view(ev){let p=ev.payload||{},personal=p.personal?.[String(s.num)]||p.personalDefault||"";if(ev.type==="broadcast")return `<section class="panel"><div class="broadcast"><b>ATTENTION, CRAWLERS</b><h2>${e(p.title)}</h2><p>${e(p.text)}</p></div>${remaining(ev)}</section>`;
+if(ev.type==="story")return `<section class="panel story"><p class="eyebrow">${e(p.chapter||"DungeonOS Director")}</p><h2>${e(p.title)}</h2><p class="story-copy">${e(p.text)}</p>${p.dungeon?`<div class="dungeon-voice"><b>DUNGEONOS:</b> ${e(p.dungeon)}</div>`:""}${personal?`<div class="personal"><b>Private Observation</b><p>${e(personal)}</p></div>`:""}${remaining(ev)}</section>`;
+if(ev.type==="choice"){let v=p.votes?.[String(s.num)];return `<section class="panel story"><p class="eyebrow">Party Decision</p><h2>${e(p.title)}</h2><p class="story-copy">${e(p.text)}</p>${p.dungeon?`<div class="dungeon-voice"><b>DUNGEONOS:</b> ${e(p.dungeon)}</div>`:""}${personal?`<div class="personal"><b>Private Observation</b><p>${e(personal)}</p></div>`:""}${remaining(ev)}<div class="choices">${(p.options||[]).map((o,i)=>`<button class="${Number(v)===i?"sel":""}" data-choice="${i}">${String.fromCharCode(65+i)}. ${e(o.label||o)}</button>`).join("")}</div></section>`}
+if(ev.type==="consequence")return `<section class="panel story"><p class="eyebrow">Decision Consequence</p><h2>${e(p.title)}</h2><p class="story-copy">${e(p.text)}</p><div class="consequence"><b>${e(p.outcome||"THE DUNGEON HAS RECORDED THIS.")}</b></div>${p.dungeon?`<div class="dungeon-voice"><b>DUNGEONOS:</b> ${e(p.dungeon)}</div>`:""}${remaining(ev)}</section>`;
+if(ev.type==="check"){let r=p.results?.[String(s.num)];return `<section class="panel story"><p class="eyebrow">Personal Attribute Check</p><h2>${e(p.title)}</h2><p>${e(p.text)}</p>${personal?`<div class="personal"><b>Private Observation</b><p>${e(personal)}</p></div>`:""}${r?`<div class="result"><span>${e(r.stat)} Check</span><strong>${r.total}</strong><p>d20 ${r.roll} + ${r.modifier} • ${r.success?"SUCCESS":"FAILURE"}</p><p>${e(r.narration)}</p></div>`:`<button id="roll-button">Roll ${e(p.stat)}</button>`}</section>`}
+if(ev.type==="combat"){let en=p.enemy||{},acted=p.acted?.[String(s.num)];return `<section class="panel story"><p class="eyebrow">Combat Protocol</p><h2>${e(en.name)}</h2><p>${e(en.description)}</p>${personal?`<div class="personal"><b>Private Tactical Read</b><p>${e(personal)}</p></div>`:""}<div class="status"><b>Enemy HP</b><div class="hp">${en.hp}/${en.maxHp}</div></div>${s.player.hp>0&&en.hp>0&&!acted?`<div class="combat"><button data-act="attack">Meet It Head-On</button><button class="alt" data-act="defend">Protect Yourself</button><button data-act="ability">Exploit Your Class</button><button class="alt" data-act="improvise">Use the Environment</button></div>`:acted?`<div class="error">ACTION RECORDED. THE ENEMY IS DECIDING WHO IT HATES MOST.</div>`:""}<div class="log">${(p.log||[]).slice(-16).reverse().map(x=>`<p>${e(x)}</p>`).join("")}</div></section>`}
+if(ev.type==="loot"){let got=(p.claimedBy||[]).includes(Number(s.num));return `<section class="panel story"><p class="eyebrow">Reward Sequence</p><h2>${e(p.title)}</h2><p>${e(p.text)}</p><div class="loot"><span>${e(p.rarity)}</span><strong>${e(p.item?.name)}</strong><p>${e(p.item?.description)}</p></div>${got?`<div class="error">ITEM ADDED TO INVENTORY</div>`:`<button id="claim-button">Claim Loot</button>`}${remaining(ev)}</section>`}
+return `<section class="panel"><div class="broadcast"><b>FLOOR COMPLETE</b><h2>${e(p.title)}</h2><p>${e(p.text)}</p></div></section>`}
+function wire(ev){if(!ev)return;document.querySelectorAll("[data-choice]").forEach(b=>b.onclick=async()=>{b.disabled=true;s.busy=true;try{await api("vote",{campaignCode:s.code,crawlerNumber:Number(s.num),eventId:ev.id,choice:Number(b.dataset.choice)});await refresh()}finally{s.busy=false}});let roll=document.querySelector("#roll-button");if(roll)roll.onclick=async()=>{roll.disabled=true;s.busy=true;try{await api("roll",{campaignCode:s.code,crawlerNumber:Number(s.num),eventId:ev.id});await refresh()}finally{s.busy=false}};document.querySelectorAll("[data-act]").forEach(b=>b.onclick=async()=>{b.disabled=true;s.busy=true;try{await api("act",{campaignCode:s.code,crawlerNumber:Number(s.num),eventId:ev.id,actionType:b.dataset.act});await refresh()}finally{s.busy=false}});let claim=document.querySelector("#claim-button");if(claim)claim.onclick=async()=>{claim.disabled=true;s.busy=true;try{await api("claim",{campaignCode:s.code,crawlerNumber:Number(s.num),eventId:ev.id});await refresh()}finally{s.busy=false}}}
+if(s.code&&s.num)poll();else join();
