@@ -1,23 +1,28 @@
 const QUESTIONS = [
   {
     id: "creature",
-    prompt: "A dangerous creature is trapped beneath rubble. A child is being chased nearby. What do you do first, and why?"
+    prompt: "A dangerous creature is trapped beneath rubble. A child is being chased nearby. What do you do first, and why?",
+    intro: "Compassion under pressure. How adorable. Let us determine whether yours is useful or merely expensive."
   },
   {
     id: "loot",
-    prompt: "You and a stranger find one life-saving item. The stranger insists they need it more. What happens next?"
+    prompt: "You and a stranger find one life-saving item. The stranger insists they need it more. What happens next?",
+    intro: "Resource conflict detected. Please reveal how quickly civilization leaves your body."
   },
   {
     id: "curse",
-    prompt: "Choose a permanent price for extraordinary power: pain, lost memories, unwanted truth, or refusal. Explain your choice."
+    prompt: "Choose a permanent price for extraordinary power: pain, lost memories, unwanted truth, or refusal. Explain your choice.",
+    intro: "Every crawler claims to have principles until the reward begins glowing."
   },
   {
     id: "betrayal",
-    prompt: "A trusted party member betrays you, but their information could still save the group. What do you do?"
+    prompt: "A trusted party member betrays you, but their information could still save the group. What do you do?",
+    intro: "Betrayal protocol. Excellent. The audience loves unresolved attachment wounds."
   },
   {
     id: "boss",
-    prompt: "The final boss is stronger than your entire party. You have one hour before combat. How do you prepare?"
+    prompt: "The final boss is stronger than your entire party. You have one hour before combat. How do you prepare?",
+    intro: "Your survival odds are insulting. Improve them."
   }
 ];
 
@@ -75,14 +80,23 @@ const ARCHETYPES = [
 ];
 
 const state = {
-  step: "welcome",
+  step: "boot",
   name: "",
   question: 0,
   answers: {},
-  profile: null
+  profile: null,
+  reactionReady: false
 };
 
 const app = document.querySelector("#app");
+const flash = document.querySelector("#flash");
+const soundToggle = document.querySelector("#sound-toggle");
+
+let audioContext = null;
+let masterGain = null;
+let ambienceNodes = [];
+let soundOn = false;
+let typingToken = 0;
 
 const escapeHtml = (value = "") =>
   value.replace(/[&<>'"]/g, char => ({
@@ -92,6 +106,141 @@ const escapeHtml = (value = "") =>
     "'": "&#39;",
     '"': "&quot;"
   })[char]);
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function triggerFlash() {
+  flash.classList.remove("active");
+  void flash.offsetWidth;
+  flash.classList.add("active");
+}
+
+function glitch() {
+  app.classList.remove("glitching");
+  void app.offsetWidth;
+  app.classList.add("glitching");
+}
+
+function showToast(text) {
+  let toast = document.querySelector(".system-toast");
+
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.className = "system-toast";
+    document.body.appendChild(toast);
+  }
+
+  toast.textContent = text;
+  toast.classList.add("show");
+
+  clearTimeout(showToast.timeout);
+  showToast.timeout = setTimeout(() => toast.classList.remove("show"), 2600);
+}
+
+function ensureAudio() {
+  if (audioContext) return;
+
+  audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  masterGain = audioContext.createGain();
+  masterGain.gain.value = .06;
+  masterGain.connect(audioContext.destination);
+}
+
+function startAmbience() {
+  ensureAudio();
+  audioContext.resume();
+
+  if (ambienceNodes.length) return;
+
+  const hum = audioContext.createOscillator();
+  const humGain = audioContext.createGain();
+  hum.type = "sine";
+  hum.frequency.value = 48;
+  humGain.gain.value = .45;
+  hum.connect(humGain).connect(masterGain);
+  hum.start();
+
+  const overtone = audioContext.createOscillator();
+  const overtoneGain = audioContext.createGain();
+  overtone.type = "triangle";
+  overtone.frequency.value = 96;
+  overtoneGain.gain.value = .12;
+  overtone.connect(overtoneGain).connect(masterGain);
+  overtone.start();
+
+  const wobble = audioContext.createOscillator();
+  const wobbleGain = audioContext.createGain();
+  wobble.frequency.value = .13;
+  wobbleGain.gain.value = 4;
+  wobble.connect(wobbleGain).connect(hum.frequency);
+  wobble.start();
+
+  ambienceNodes = [hum, overtone, wobble];
+}
+
+function stopAmbience() {
+  ambienceNodes.forEach(node => {
+    try { node.stop(); } catch {}
+  });
+  ambienceNodes = [];
+}
+
+function beep(frequency = 180, duration = .08, volume = .16) {
+  if (!soundOn) return;
+
+  ensureAudio();
+  const oscillator = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+
+  oscillator.type = "square";
+  oscillator.frequency.value = frequency;
+  gain.gain.setValueAtTime(volume, audioContext.currentTime);
+  gain.gain.exponentialRampToValueAtTime(.001, audioContext.currentTime + duration);
+
+  oscillator.connect(gain).connect(masterGain);
+  oscillator.start();
+  oscillator.stop(audioContext.currentTime + duration);
+}
+
+function alarmBurst() {
+  if (!soundOn) return;
+  [0, 160, 320].forEach((delay, index) => {
+    setTimeout(() => beep(index % 2 ? 460 : 330, .13, .25), delay);
+  });
+}
+
+soundToggle.addEventListener("click", () => {
+  soundOn = !soundOn;
+  soundToggle.textContent = soundOn ? "SOUND: ON" : "SOUND: OFF";
+  soundToggle.classList.toggle("on", soundOn);
+
+  if (soundOn) {
+    startAmbience();
+    beep(520, .08, .15);
+    showToast("AMBIENCE ENABLED. HEADPHONES RECOMMENDED.");
+  } else {
+    stopAmbience();
+    showToast("AMBIENCE DISABLED.");
+  }
+});
+
+async function typeText(element, text, speed = 24) {
+  const token = ++typingToken;
+  element.textContent = "";
+
+  for (let index = 0; index < text.length; index += 1) {
+    if (token !== typingToken) return;
+    element.textContent += text[index];
+
+    if (/[.!?]/.test(text[index])) {
+      await sleep(speed * 4);
+    } else {
+      await sleep(speed + Math.random() * speed * .5);
+    }
+  }
+}
 
 function scoreAnswers(answers) {
   const scores = Object.fromEntries(Object.keys(KEYWORDS).map(key => [key, 0]));
@@ -182,29 +331,85 @@ function reaction(answer) {
     /both|another way|instead|convince|negotiate|after that|then i/.test(answer.toLowerCase());
 
   const line = rejectedChoice
-    ? "ERROR: SUBJECT HAS ONCE AGAIN REFUSED TO RESPECT THE WRITER'S FALSE CHOICE. Management is irritated. The audience is interested."
+    ? "ERROR: SUBJECT HAS REFUSED TO RESPECT THE PROVIDED CHOICES. Management is irritated. The audience is interested."
     : "Response recorded. The audience has begun making irresponsible financial decisions based on your survival odds.";
 
   return { line, tags: top };
 }
 
 function render() {
+  if (state.step === "boot") return renderBoot();
   if (state.step === "welcome") return renderWelcome();
   if (state.step === "quiz") return renderQuiz();
+  if (state.step === "reveal-loading") return renderRevealLoading();
   return renderReveal();
+}
+
+async function renderBoot() {
+  app.innerHTML = `
+    <section class="boot-screen">
+      <div class="boot-terminal">
+        <h1 class="boot-logo">SIGNAL<br>OVERRIDE</h1>
+        <div class="boot-lines" id="boot-lines"></div>
+        <div class="boot-action" id="boot-action">
+          <button id="continue-boot">Acknowledge Processing</button>
+        </div>
+      </div>
+    </section>
+  `;
+
+  const lines = [
+    ["system", "Connecting to local device..."],
+    ["system", "Identity services unavailable."],
+    ["warning", "Atmospheric integrity: FAILED"],
+    ["warning", "Surface civilization: DISCONTINUED"],
+    ["danger", "UNREGISTERED CRAWLER DETECTED"],
+    ["system", "Launching mandatory intake protocol."]
+  ];
+
+  const holder = document.querySelector("#boot-lines");
+
+  for (const [kind, text] of lines) {
+    const line = document.createElement("p");
+    line.className = `boot-line ${kind}`;
+    holder.appendChild(line);
+    await typeText(line, `> ${text}`, kind === "danger" ? 18 : 25);
+    beep(kind === "danger" ? 330 : 160, .045, .1);
+    await sleep(kind === "danger" ? 270 : 130);
+  }
+
+  const cursor = document.createElement("span");
+  cursor.className = "cursor";
+  holder.appendChild(cursor);
+
+  document.querySelector("#boot-action").classList.add("ready");
+  document.querySelector("#continue-boot").addEventListener("click", () => {
+    beep(620, .12, .2);
+    triggerFlash();
+    glitch();
+
+    setTimeout(() => {
+      state.step = "welcome";
+      render();
+    }, 240);
+  });
 }
 
 function renderWelcome() {
   app.innerHTML = `
-    <section class="panel welcome">
+    <section class="panel welcome question-arrival">
       <div class="warning-strip"><span>Mandatory Dungeon Processing</span></div>
       <p class="eyebrow">Survival Classification Division</p>
       <div class="stamp">Property of the Dungeon</div>
 
       <h1>CRAWLER<br><span>INTAKE</span></h1>
 
+      <div class="ai-speaker">
+        <div class="ai-icon">AI</div>
+        <div class="ai-copy" id="welcome-ai"></div>
+      </div>
+
       <p class="lede">
-        Your former life has been successfully converted into entertainment.
         Complete the assessment. Receive one permanent crawler number from
         1 to 13,000,000. Try not to embarrass your species.
       </p>
@@ -226,6 +431,12 @@ function renderWelcome() {
   const input = document.querySelector("#name");
   const button = document.querySelector("#begin");
 
+  typeText(
+    document.querySelector("#welcome-ai"),
+    "Your former life has been successfully converted into entertainment. Please provide a designation. Names with tragic backstories test well.",
+    18
+  );
+
   input.addEventListener("input", () => {
     button.disabled = !input.value.trim();
   });
@@ -240,15 +451,18 @@ function renderWelcome() {
 function begin(name) {
   state.name = name.trim();
   state.step = "quiz";
+  triggerFlash();
+  beep(240, .08, .15);
   render();
 }
 
 function renderQuiz() {
+  state.reactionReady = false;
   const current = QUESTIONS[state.question];
   const progress = ((state.question + 1) / QUESTIONS.length) * 100;
 
   app.innerHTML = `
-    <section class="panel quiz">
+    <section class="panel quiz question-arrival">
       <div class="warning-strip"><span>Psychological Hazard Assessment</span></div>
 
       <div class="progress-frame">
@@ -258,6 +472,12 @@ function renderQuiz() {
       </div>
 
       <p class="eyebrow">Assessment ${state.question + 1} of ${QUESTIONS.length}</p>
+
+      <div class="ai-speaker">
+        <div class="ai-icon">AI</div>
+        <div class="ai-copy" id="question-ai"></div>
+      </div>
+
       <h2>${escapeHtml(current.prompt)}</h2>
 
       <textarea id="answer" placeholder="The Dungeon AI is listening..." rows="8"></textarea>
@@ -275,6 +495,8 @@ function renderQuiz() {
     </section>
   `;
 
+  typeText(document.querySelector("#question-ai"), current.intro, 18);
+
   const answer = document.querySelector("#answer");
   const button = document.querySelector("#submit");
 
@@ -287,24 +509,28 @@ function renderQuiz() {
 
 async function submit(id, value, button) {
   state.answers[id] = value.trim();
+  button.disabled = true;
 
   const result = reaction(value);
   document.querySelector("#reaction").innerHTML = `
     <div class="reaction">
-      <b>DUNGEON AI:</b> ${result.line}
+      <b>DUNGEON AI:</b>
+      <span id="reaction-copy"></span>
       <div class="tag-row">
         ${result.tags.map(tag => `<span class="tag">${tag.toUpperCase()} DETECTED</span>`).join("")}
       </div>
     </div>
   `;
 
-  button.disabled = true;
+  beep(200, .06, .16);
+  await typeText(document.querySelector("#reaction-copy"), ` ${result.line}`, 15);
 
   if (state.question < QUESTIONS.length - 1) {
-    setTimeout(() => {
-      state.question += 1;
-      render();
-    }, 700);
+    button.textContent = "Response Recorded";
+    await sleep(720);
+    triggerFlash();
+    state.question += 1;
+    render();
     return;
   }
 
@@ -313,7 +539,9 @@ async function submit(id, value, button) {
   try {
     const crawlerNumber = await allocateNumber();
     state.profile = buildProfile(state.name, state.answers, crawlerNumber);
-    state.step = "reveal";
+    state.step = "reveal-loading";
+    alarmBurst();
+    triggerFlash();
     render();
   } catch (error) {
     button.disabled = false;
@@ -325,6 +553,42 @@ async function submit(id, value, button) {
       </div>
     `;
   }
+}
+
+function renderRevealLoading() {
+  app.innerHTML = `
+    <section class="reveal-stage">
+      <div class="reveal-overlay">
+        <div class="reveal-sequence">
+          <h2>PROCESSING</h2>
+          <p id="reveal-status">Compiling psychological liabilities...</p>
+          <div class="reveal-meter"><span></span></div>
+        </div>
+      </div>
+    </section>
+  `;
+
+  const statuses = [
+    "Compiling psychological liabilities...",
+    "Estimating entertainment value...",
+    "Calculating probable cause of death...",
+    "Assigning permanent crawler identity..."
+  ];
+
+  const status = document.querySelector("#reveal-status");
+
+  statuses.forEach((text, index) => {
+    setTimeout(() => {
+      status.textContent = text;
+      beep(170 + index * 55, .08, .13);
+    }, index * 560);
+  });
+
+  setTimeout(() => {
+    triggerFlash();
+    state.step = "reveal";
+    render();
+  }, 2450);
 }
 
 function traitText(trait) {
@@ -345,7 +609,7 @@ function renderReveal() {
 
   app.innerHTML = `
     <section class="reveal-wrap">
-      <div class="card" id="crawler-card">
+      <div class="card revealed" id="crawler-card">
         <div class="warning-strip"><span>Official Crawler Dossier</span></div>
 
         <header>
@@ -418,6 +682,7 @@ function renderReveal() {
     </section>
   `;
 
+  alarmBurst();
   document.querySelector("#download").addEventListener("click", downloadCard);
   document.querySelector("#again").addEventListener("click", () => location.reload());
 }

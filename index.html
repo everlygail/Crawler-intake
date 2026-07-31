@@ -3,17 +3,27 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#0c0c0c" />
-  <meta name="description" content="An unofficial fan-made crawler personality generator." />
+  <meta name="theme-color" content="#090909" />
+  <meta name="description" content="An unofficial fan-made crawler intake experience." />
   <title>Crawler Intake</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Bebas+Neue&family=Roboto+Slab:wght@400;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Bebas+Neue&family=Roboto+Mono:wght@400;700&family=Roboto+Slab:wght@400;700;900&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <div id="fx-layer" aria-hidden="true">
+    <div class="scanlines"></div>
+    <div class="vignette"></div>
+    <div id="flash"></div>
+  </div>
+
+  <button id="sound-toggle" class="sound-toggle" type="button" aria-label="Toggle ambience">
+    SOUND: OFF
+  </button>
+
   <main id="app" class="app-shell"></main>
 
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
