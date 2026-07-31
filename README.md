@@ -1,53 +1,52 @@
-# Crawler Intake V2
+# Crawler Intake — Complete V1
 
-A mobile-first, unofficial fan-made LitRPG crawler personality generator.
+This is the complete first public version.
 
-## What changed in V2
+## Included
 
-- Red, black, cream, and warning-yellow visual system
-- Condensed, industrial display typography
-- Distressed dossier and hazard-sign styling
-- Missing Netlify number-allocation function added
-- Numbers are no longer generated locally
-- Failed database connections now display a clear retry message
-- Permanent crawler numbers are reserved from 1 through 13,000,000
+- 39-question bank
+- Nine-question interviews
+- Randomized opening questions
+- Adaptive later questions based on the crawler's strongest traits
+- Memory callbacks to previous answers
+- Customized Dungeon AI commentary
+- Achievement unlocks
+- Audience-interest tracking
+- Permanent random crawler numbers from 1–13,000,000
+- Saved crawler profiles in Supabase
+- Public dossier links at `/crawler/NUMBER`
+- Search by crawler number
+- Shareable dossier links
+- Downloadable crawler cards
+- Sound, haptics, interruptions, broadcast effects, and animated reveal
 
-## Replace the files in GitHub
+## GitHub changes
 
-Upload everything in this folder to the root of the existing repository.
+Replace these root files:
 
-The function must appear at:
+- `index.html`
+- `app.js`
+- `styles.css`
+- `netlify.toml`
+- `schema.sql`
 
-`netlify/functions/allocate-crawler-number.mjs`
+Create this function file:
 
-GitHub should show a `netlify` folder. Open it and confirm it contains a
-`functions` folder, which contains the `.mjs` file.
+`netlify/functions/crawler-api.mjs`
+
+The old `allocate-crawler-number.mjs` function may stay. The new app does not use it.
 
 ## Supabase
 
-Run `supabase/schema.sql` in the Supabase SQL Editor. If you already created
-the `crawler_numbers` table, running it again is safe.
+Run the complete contents of `schema.sql` in Supabase SQL Editor.
 
-## Netlify environment variables
+This creates `crawler_profiles`, which stores each public dossier.
 
-Add:
+## Netlify
+
+Your existing environment variables remain the same:
 
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
 
-Use the same value for all deploy contexts when available. If Netlify requires
-separate values, placing them in Production is enough for the live site.
-
-After adding or changing environment variables, trigger a fresh production
-deployment.
-
-## Security
-
-Never place the service-role key in `app.js`, GitHub, screenshots, or chat.
-It belongs only in Netlify's private environment variables.
-
-## Fan-project notice
-
-The interface is an original fan-made design inspired by broad LitRPG,
-dungeon-crawl, industrial warning-sign, and distressed paperback aesthetics.
-It does not contain official logos or proprietary artwork.
+After committing all files and running the SQL, trigger a new Netlify deployment.

@@ -1,6 +1,1 @@
-{
-  "name": "crawler-intake",
-  "private": true,
-  "version": "0.2.0",
-  "type": "module"
-}
+{"name":"crawler-intake-complete","version":"1.0.0","private":true,"type":"module"}
