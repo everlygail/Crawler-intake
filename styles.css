@@ -481,3 +481,80 @@ blockquote { margin: 25px 12px; color: var(--red-dark); font-size: 1.2rem; font-
 @media (prefers-reduced-motion: reduce) {
   *,*::before,*::after { animation-duration:.01ms!important; animation-iteration-count:1!important; transition-duration:.01ms!important; }
 }
+
+
+.profile-analysis {
+  margin-top: 18px;
+  padding: 18px;
+  border: 3px solid var(--black);
+  background: var(--paper-dark);
+  line-height: 1.62;
+}
+.profile-analysis b {
+  color: var(--red-dark);
+  font-family: "Archivo Black", sans-serif;
+  font-size: .7rem;
+  letter-spacing: .08em;
+}
+.profile-analysis p { margin: 8px 0 0; }
+
+.quirk-grid {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: 10px;
+  margin-top: 18px;
+}
+.quirk-card {
+  min-height: 125px;
+  padding: 13px;
+  border: 3px solid var(--black);
+  background: var(--yellow);
+}
+.quirk-card b {
+  font-family: "Archivo Black", sans-serif;
+  font-size: .62rem;
+  letter-spacing: .08em;
+}
+.quirk-card p {
+  margin: 9px 0 0;
+  font-size: .79rem;
+  line-height: 1.42;
+}
+
+.trait-spectrum { margin-top: 20px; }
+.spectrum-row {
+  display: grid;
+  grid-template-columns: 130px 1fr 30px;
+  gap: 9px;
+  align-items: center;
+  margin: 7px 0;
+  font-size: .73rem;
+  font-weight: 900;
+  text-transform: capitalize;
+}
+.spectrum-row > div {
+  height: 12px;
+  border: 2px solid var(--black);
+  background: rgba(0,0,0,.12);
+}
+.spectrum-row i {
+  display: block;
+  height: 100%;
+  background: var(--red);
+}
+.spectrum-row b {
+  color: var(--red-dark);
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 1.2rem;
+}
+
+.path p {
+  margin: 6px 0 0;
+  font-size: .72rem;
+  line-height: 1.35;
+}
+
+@media (max-width:650px) {
+  .quirk-grid { grid-template-columns: 1fr; }
+  .spectrum-row { grid-template-columns: 92px 1fr 26px; }
+}

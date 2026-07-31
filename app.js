@@ -7,8 +7,14 @@ const soundToggle = document.querySelector("#sound-toggle");
 const TOTAL_QUESTIONS = 9;
 
 const TAGS = [
-  "protect","strategy","social","bond","survival","adapt",
-  "risk","knowledge","control","leadership","mercy","ambition"
+  "protect","strategy","social","bond","survival","adapt","risk","knowledge",
+  "control","leadership","mercy","ambition","empathy","loyalty","curiosity",
+  "discipline","chaos","violence","sacrifice","pragmatism","deception",
+  "honor","patience","independence","faith","vengeance","creativity",
+  "caution","authority","defiance","optimism","ruthlessness","cooperation",
+  "intuition","calculation","identity","fear","humor","responsibility",
+  "manipulation","restraint","hope","obsession","trust","ego","resourcefulness",
+  "justice","attachment","selfPreservation","altruism"
 ];
 
 const QUESTION_BANK = [
@@ -54,29 +60,173 @@ const QUESTION_BANK = [
 ];
 
 const KEYWORDS = {
-  protect:["save","protect","shield","child","everyone","both","party","sacrifice"],
-  strategy:["plan","trap","weakness","information","prepare","option","study","examine"],
-  social:["talk","convince","negotiate","offer","deal","persuade","reason"],
-  bond:["friend","familiar","creature","trust","love","companion","tame"],
-  survival:["survive","escape","safe","hide","live","food","run"],
-  adapt:["adapt","change","rebuild","learn","improvise","accept","remade"],
-  risk:["risk","danger","cost","sacrifice","curse","pain","gamble"],
-  knowledge:["know","learn","study","truth","secret","research","information"],
-  control:["control","restrain","command","leverage","contain","watch"],
-  leadership:["lead","assign","team","responsibility","decide","coordinate"],
-  mercy:["mercy","spare","forgive","help","compassion","change"],
-  ambition:["power","throne","fame","legacy","win","stronger","rule"]
+  protect:["save","protect","shield","child","everyone","both","party","defend","guard"],
+  strategy:["plan","trap","weakness","information","prepare","option","study","examine","calculate"],
+  social:["talk","convince","negotiate","offer","deal","persuade","reason","bargain"],
+  bond:["friend","familiar","creature","trust","love","companion","tame","loyal"],
+  survival:["survive","escape","safe","hide","live","food","run","shelter"],
+  adapt:["adapt","change","rebuild","learn","improvise","accept","remade","adjust"],
+  risk:["risk","danger","cost","curse","pain","gamble","chance"],
+  knowledge:["know","learn","study","truth","secret","research","information","book"],
+  control:["control","restrain","command","leverage","contain","watch","manage"],
+  leadership:["lead","assign","team","responsibility","decide","coordinate","organize"],
+  mercy:["mercy","spare","forgive","help","compassion","change","second chance"],
+  ambition:["power","throne","fame","legacy","win","stronger","rule","rise"],
+  empathy:["feel","understand","hurt","afraid","comfort","care","empathy"],
+  loyalty:["loyal","stay","promise","betray","side","stand by","commit"],
+  curiosity:["curious","open","explore","wonder","question","find out"],
+  discipline:["wait","routine","careful","practice","discipline","steady"],
+  chaos:["chaos","random","wild","improvise","whatever happens","unpredictable"],
+  violence:["kill","attack","fight","hurt","weapon","destroy","execute"],
+  sacrifice:["sacrifice","give up","take the hit","stay behind","trade my"],
+  pragmatism:["necessary","practical","efficient","best option","least harm","realistic"],
+  deception:["lie","trick","fake","pretend","mislead","deceive"],
+  honor:["honor","fair","promise","word","truthful","right thing"],
+  patience:["wait","observe","patient","watch first","take time"],
+  independence:["alone","myself","independent","don't need","solo"],
+  faith:["faith","believe","god","fate","destiny","trust the universe"],
+  vengeance:["revenge","payback","vengeance","make them suffer","settle the score"],
+  creativity:["invent","create","unexpected","third option","another way","loophole"],
+  caution:["careful","avoid","check","safe","cautious","slow"],
+  authority:["order","command","authority","obey","rank","leader"],
+  defiance:["refuse","won't","reject","break the rules","defy","ignore the choice"],
+  optimism:["hope","believe it can work","better future","we can"],
+  ruthlessness:["leave them","kill them","necessary loss","cut them loose","no hesitation"],
+  cooperation:["together","team","everyone helps","work with","share"],
+  intuition:["instinct","gut","feel like","sense"],
+  calculation:["calculate","odds","probability","weigh","compare","analyze"],
+  identity:["who i am","myself","identity","recognize myself","become"],
+  fear:["afraid","fear","terrified","panic","scared"],
+  humor:["joke","laugh","funny","sarcasm","make light"],
+  responsibility:["my fault","responsibility","own it","accountable","blame me"],
+  manipulation:["use them","leverage","influence","make them think","pressure"],
+  restraint:["hold back","don't kill","restrain","limit","controlled force"],
+  hope:["hope","chance","future","tomorrow","keep going"],
+  obsession:["must know","can't stop","whatever it takes","need to"],
+  trust:["trust","believe them","give them a chance","rely on"],
+  ego:["prove","better than","my authority","respect me","I deserve"],
+  resourcefulness:["use what i have","improvise","make do","repurpose","jury-rig"],
+  justice:["justice","deserve","fair","accountability","consequence"],
+  attachment:["love","can't leave","need them","mine","my person"],
+  selfPreservation:["my life","save myself","escape alone","stay alive"],
+  altruism:["others first","everyone else","save them","for the group"]
 };
 
-const ARCHETYPES = [
-  {title:"The Better Offer",type:"Controller / Support",race:"Serpentkin",className:"Beast Diplomat",alignment:"Chaotic Cooperative",keys:["social","bond","strategy"],quote:"The Dungeon does not need another weapon. It needs a negotiator."},
-  {title:"The Last Door Standing",type:"Defender / Commander",race:"Ironblood",className:"Oath Warden",alignment:"Protective Neutral",keys:["protect","leadership","survival"],quote:"Anything behind me is not yours to take."},
-  {title:"The Unwritten Option",type:"Tactician / Manipulator",race:"Mirrorborn",className:"Loophole Architect",alignment:"Chaotic Strategic",keys:["strategy","control","knowledge"],quote:"Your rules are only dangerous when I agree they are rules."},
-  {title:"The One Who Returned",type:"Adaptive / Skirmisher",race:"Ashborn",className:"Ruinwalker",alignment:"Pragmatic Neutral",keys:["adapt","survival","risk"],quote:"Meaning can be rebuilt. So can I."},
-  {title:"The Gentle Catastrophe",type:"Healer / Monster Handler",race:"Thornblood",className:"Mercy Binder",alignment:"Compassionate Dangerous",keys:["mercy","bond","protect"],quote:"Kindness is not softness. Ask the things I spared."},
-  {title:"The Crown Without Permission",type:"Leader / Power Broker",race:"Sunforged",className:"Sovereign Renegade",alignment:"Ambitious Protective",keys:["ambition","leadership","control"],quote:"I did not ask for the throne. I asked what it could do."},
-  {title:"The Forbidden Index",type:"Scholar / Reality Breaker",race:"Glyphborn",className:"Abyssal Archivist",alignment:"Curious Unstable",keys:["knowledge","risk","adapt"],quote:"Every warning label is also a table of contents."},
-  {title:"The Necessary Monster",type:"Executioner / Guardian",race:"Nightborn",className:"Merciful Reaper",alignment:"Severe Compassion",keys:["mercy","control","survival"],quote:"I will do the terrible thing. I will also remember its name."}
+const RACE_ENGINES = [
+  {name:"Verdant Naga",keys:["mercy","bond","adapt"],note:"soft-spoken, patient, and considerably more dangerous than it looks"},
+  {name:"Archivist Wyrm",keys:["knowledge","control","curiosity"],note:"built to hoard truths, secrets, and leverage"},
+  {name:"Sunforged",keys:["ambition","leadership","hope"],note:"radiant, commanding, and difficult to ignore"},
+  {name:"Ashborn",keys:["adapt","survival","identity"],note:"rebuilt by loss rather than defined by it"},
+  {name:"Mirrorborn",keys:["strategy","deception","creativity"],note:"reflective, elusive, and structurally opposed to simple answers"},
+  {name:"Ironblood",keys:["protect","discipline","responsibility"],note:"made for endurance, duty, and becoming the wall"},
+  {name:"Nightborn",keys:["restraint","violence","justice"],note:"controlled, severe, and familiar with ugly necessities"},
+  {name:"Thornkin",keys:["mercy","defiance","protect"],note:"gentle until cornered, then regrettable"},
+  {name:"Glyphborn",keys:["knowledge","faith","identity"],note:"marked by symbols it only partially understands"},
+  {name:"Stormblood",keys:["chaos","risk","defiance"],note:"volatile, impulsive, and deeply entertaining"},
+  {name:"Hollow Saint",keys:["sacrifice","hope","mercy"],note:"built around absence, duty, and impossible compassion"},
+  {name:"Glass Revenant",keys:["survival","vengeance","identity"],note:"fractured, persistent, and not finished"},
+  {name:"Crownmarked",keys:["authority","ambition","ego"],note:"born with the posture of someone already issuing orders"},
+  {name:"Mossbound",keys:["bond","patience","cooperation"],note:"slow to trust, slower to abandon"},
+  {name:"Voidtouched",keys:["curiosity","risk","obsession"],note:"too curious for its own continued structural integrity"},
+  {name:"Emberkin",keys:["hope","leadership","violence"],note:"warm, bright, and alarmingly willing to burn"}
+];
+
+const CLASS_ENGINES = [
+  {name:"Whisper Broker",keys:["social","manipulation","strategy"]},
+  {name:"Tomb Cartographer",keys:["knowledge","caution","resourcefulness"]},
+  {name:"Bone Accountant",keys:["calculation","pragmatism","control"]},
+  {name:"Swarm Shepherd",keys:["bond","leadership","cooperation"]},
+  {name:"Living Siege",keys:["protect","violence","discipline"]},
+  {name:"Blood Negotiator",keys:["social","violence","restraint"]},
+  {name:"Grief Alchemist",keys:["adapt","identity","hope"]},
+  {name:"Audience Heretic",keys:["defiance","independence","creativity"]},
+  {name:"Mercy Binder",keys:["mercy","control","bond"]},
+  {name:"Oath Warden",keys:["honor","protect","responsibility"]},
+  {name:"Loophole Architect",keys:["strategy","creativity","defiance"]},
+  {name:"Abyssal Archivist",keys:["knowledge","obsession","risk"]},
+  {name:"Ruinwalker",keys:["survival","adapt","resourcefulness"]},
+  {name:"Sovereign Renegade",keys:["leadership","ambition","defiance"]},
+  {name:"Monster Advocate",keys:["bond","mercy","social"]},
+  {name:"Threat Composer",keys:["calculation","violence","creativity"]},
+  {name:"Hope Smuggler",keys:["hope","deception","altruism"]},
+  {name:"Debt Paladin",keys:["justice","honor","vengeance"]},
+  {name:"Chaos Medic",keys:["mercy","chaos","resourcefulness"]},
+  {name:"Memory Thief",keys:["identity","deception","knowledge"]},
+  {name:"Crisis Oracle",keys:["intuition","fear","leadership"]},
+  {name:"Quiet Executioner",keys:["restraint","violence","pragmatism"]},
+  {name:"Familiar General",keys:["bond","authority","protect"]},
+  {name:"Probability Witch",keys:["calculation","risk","knowledge"]}
+];
+
+const TITLE_PREFIXES = {
+  protect:["The Last","The Shield of","The One Who Guards","The Wall Before"],
+  strategy:["The Unwritten","The Architect of","The Mind Behind","The One Who Planned"],
+  social:["The Better","The Silver-Tongued","The Voice Behind","The One Who Offered"],
+  bond:["The Beast-Beloved","The Keeper of","The One Monsters Follow","The Familiar's"],
+  survival:["The One Who Returned","The Unburied","The Still-Breathing","The Last Living"],
+  adapt:["The Remade","The Many-Shaped","The One Who Became","The Ash-Rewritten"],
+  knowledge:["The Forbidden","The Index of","The One Who Opened","The Keeper of Impossible"],
+  control:["The Hand on","The Keeper of","The One Holding","The Chain Around"],
+  leadership:["The Crown Without","The Voice Before","The One They Follow","The Unasked-for"],
+  mercy:["The Gentle","The Patron Saint of","The One Who Spared","The Kindness After"],
+  ambition:["The Crown-Hungry","The One Who Reached","The Heir to","The Uninvited"],
+  defiance:["The Uncooperative","The Rulebreaker of","The One Who Refused","The Door That Wouldn't"],
+  curiosity:["The One Who Looked","The Door-Opener","The Question Beneath","The Unfinished"],
+  hope:["The Last Hope of","The One Who Believed","The Light Beneath","The Tomorrow After"],
+  violence:["The Necessary","The Red-Handed","The Blade Behind","The One Who Ended"],
+  sacrifice:["The Final","The One Who Stayed","The Price Paid by","The Last Gift of"]
+};
+
+const TITLE_SUFFIXES = {
+  protect:["the Door","the Innocent","Everyone Else","the Final Room"],
+  strategy:["Bad Odds","the Hidden Exit","Impossible Plans","the Third Option"],
+  social:["Offer","Lie","Peace Treaty","Impossible Bargain"],
+  bond:["Monsters","Lost Things","Unwanted Creatures","the Faithful"],
+  survival:["Ruin","the Collapse","Certain Death","the Last Floor"],
+  adapt:["Disaster","the Fire","What Was Left","the Breaking Point"],
+  knowledge:["Door","Truth","Archive","Warning Label"],
+  control:["Chaos","the Leash","the Last Word","the Room"],
+  leadership:["Permission","the Crown","the Charge","the Final Stand"],
+  mercy:["Catastrophe","Bad Decisions","the Damned","the Enemy"],
+  ambition:["the Throne","the Summit","the Empty Crown","Tomorrow"],
+  defiance:["Open","Obey","Stay Broken","Take the Hint"],
+  curiosity:["Back","Every Warning","the Dark","the Last Page"],
+  hope:["the End","Ruin","the Dark","Everyone Else"],
+  violence:["Monster","Argument","Mercy","the Threat"],
+  sacrifice:["Choice","Door","Light","Breath"]
+};
+
+const QUIRKS = [
+  {keys:["bond","empathy"],text:"NPC children and frightened animals trust you before they have any reason to."},
+  {keys:["social","ambition"],text:"Shopkeepers overcharge you because you look expensive."},
+  {keys:["knowledge","curiosity"],text:"You can identify a cursed object instantly. You still want to touch it."},
+  {keys:["protect","sacrifice"],text:"Allies unconsciously stand behind you when danger enters the room."},
+  {keys:["chaos","humor"],text:"Your worst ideas receive suspiciously enthusiastic audience applause."},
+  {keys:["control","discipline"],text:"Doors seem more willing to lock after you enter a room."},
+  {keys:["mercy","violence"],text:"Enemies are never quite sure whether you are saving them or sentencing them."},
+  {keys:["survival","resourcefulness"],text:"You can turn almost any useless object into a disappointing but functional weapon."},
+  {keys:["leadership","responsibility"],text:"Strangers hand you problems as though you are already in charge."},
+  {keys:["defiance","creativity"],text:"System menus occasionally display options that do not exist for other crawlers."},
+  {keys:["faith","hope"],text:"Candles remain lit when you pass, even in wind."},
+  {keys:["vengeance","patience"],text:"You remember every debt. The Dungeon has started keeping a separate ledger."},
+  {keys:["deception","social"],text:"Your most convincing lies contain one unnecessary and completely true detail."},
+  {keys:["independence","survival"],text:"Maps become less accurate whenever you decide you do not need anyone."},
+  {keys:["ego","authority"],text:"Furniture subtly rearranges itself to give you the best seat."},
+  {keys:["attachment","fear"],text:"You are fearless until someone you love is placed at risk."},
+  {keys:["justice","restraint"],text:"You prefer consequences that leave the target alive long enough to understand them."},
+  {keys:["obsession","knowledge"],text:"Books sometimes open to the page you need. This is not necessarily helpful."},
+  {keys:["altruism","hope"],text:"Your survival odds improve whenever you are protecting someone else."},
+  {keys:["calculation","intuition"],text:"Your gut feelings arrive with percentages attached."},
+  {keys:["manipulation","mercy"],text:"You can make kindness feel like a threat."},
+  {keys:["caution","risk"],text:"You carefully evaluate every danger before doing something reckless anyway."},
+  {keys:["identity","adapt"],text:"Mirrors occasionally show versions of you that made different choices."},
+  {keys:["humor","fear"],text:"You become significantly funnier when terrified."},
+  {keys:["cooperation","leadership"],text:"Parties function better around you, but complain more often."},
+  {keys:["violence","restraint"],text:"Weapons feel heavier in your hand until you are certain."},
+  {keys:["curiosity","defiance"],text:"Warning signs become more legible as you approach them."},
+  {keys:["pragmatism","mercy"],text:"You are capable of doing the kind thing for deeply unromantic reasons."},
+  {keys:["ambition","hope"],text:"The audience can never tell whether you want power for yourself or for what it could fix."},
+  {keys:["trust","loyalty"],text:"Betrayal affects you exactly once per person."}
 ];
 
 const ACHIEVEMENTS = {
@@ -157,12 +307,55 @@ async function typeText(el,text,speed=17){
 function analyze(answer){
   const text=answer.toLowerCase();
   const found=[];
+
   for(const [tag,words] of Object.entries(KEYWORDS)){
     let points=0;
-    for(const w of words) if(text.includes(w)) points+=2;
-    if(points){state.scores[tag]+=points;found.push([tag,points]);}
+    for(const w of words){
+      if(text.includes(w)) points+=2;
+    }
+    if(points){
+      state.scores[tag]+=points;
+      found.push([tag,points]);
+    }
   }
-  if(/both|another way|instead|third option|then i|after that/.test(text)){state.scores.strategy+=4;found.push(["strategy",4]);unlock("falseChoice");}
+
+  const pairRules = [
+    [/both|another way|third option|instead|then i|after that/, [["strategy",4],["creativity",5],["defiance",2]]],
+    [/save|protect|child|everyone|help/, [["protect",3],["altruism",3],["empathy",2]]],
+    [/talk|convince|negotiate|offer|deal/, [["social",3],["manipulation",1],["restraint",2]]],
+    [/kill|execute|attack|destroy/, [["violence",4],["mercy",-2],["restraint",-1]]],
+    [/wait|observe|watch first|take time/, [["patience",4],["caution",3],["calculation",2]]],
+    [/sacrifice|stay behind|take the hit/, [["sacrifice",5],["altruism",4],["selfPreservation",-3]]],
+    [/alone|by myself|escape alone/, [["independence",4],["cooperation",-2],["selfPreservation",2]]],
+    [/truth|honest|tell them/, [["honor",3],["deception",-2],["trust",2]]],
+    [/lie|pretend|mislead|trick/, [["deception",4],["honor",-2],["strategy",2]]],
+    [/revenge|payback|make them suffer/, [["vengeance",5],["mercy",-3],["justice",2]]],
+    [/forgive|spare|second chance/, [["mercy",5],["hope",3],["vengeance",-2]]],
+    [/power|throne|rule|authority/, [["ambition",4],["authority",3],["ego",1]]],
+    [/responsibility|my fault|blame me|own it/, [["responsibility",5],["leadership",3],["ego",-1]]],
+    [/gut|instinct|feel like/, [["intuition",4],["calculation",-1]]],
+    [/odds|probability|calculate|weigh/, [["calculation",4],["intuition",-1]]]
+  ];
+
+  for(const [regex,changes] of pairRules){
+    if(regex.test(text)){
+      for(const [tag,delta] of changes){
+        state.scores[tag]=Math.max(0,state.scores[tag]+delta);
+        if(delta>0) found.push([tag,delta]);
+      }
+    }
+  }
+
+  if(answer.length>260){
+    state.scores.obsession+=2;
+    state.scores.calculation+=1;
+  }
+  if(answer.length<55){
+    state.scores.pragmatism+=2;
+    state.scores.patience=Math.max(0,state.scores.patience-1);
+  }
+
+  if(/both|another way|instead|third option|then i|after that/.test(text))unlock("falseChoice");
   if(/save|protect|child|everyone|help/.test(text))unlock("protector");
   if(/talk|convince|negotiate|offer|deal/.test(text))unlock("negotiator");
   if(/plan|prepare|weakness|trap|study/.test(text))unlock("strategist");
@@ -170,8 +363,9 @@ function analyze(answer){
   if(/mercy|spare|forgive|compassion/.test(text))unlock("mercy");
   if(/power|throne|fame|legacy|rule/.test(text))unlock("ambition");
   if(/book|secret|knowledge|truth|study/.test(text))unlock("scholar");
-  state.audience=Math.min(99,state.audience+5+Math.min(12,Math.floor(answer.length/45)));
-  return found.sort((a,b)=>b[1]-a[1]).slice(0,3).map(x=>x[0]);
+
+  state.audience=Math.min(99,state.audience+4+Math.min(13,Math.floor(answer.length/42)));
+  return found.sort((a,b)=>b[1]-a[1]).slice(0,4).map(x=>x[0]);
 }
 
 function unlock(key){
@@ -240,39 +434,194 @@ async function api(method,payload,number){
 
 function buildProfile(number){
   const ranked=Object.entries(state.scores).sort((a,b)=>b[1]-a[1]);
-  const archetype=ARCHETYPES.map(a=>({...a,score:a.keys.reduce((s,k)=>s+state.scores[k],0)})).sort((a,b)=>b.score-a.score)[0];
-  const stat=(base,keys)=>Math.min(20,base+keys.reduce((s,k)=>s+Math.floor(state.scores[k]/5),0));
+  const topKeys=ranked.slice(0,8).map(([k])=>k);
+
+  const scoreEngine = (engine) =>
+    engine.keys.reduce((sum,key,index)=>sum+(state.scores[key]||0)*(3-index),0);
+
+  const race = RACE_ENGINES
+    .map(item=>({...item,score:scoreEngine(item)}))
+    .sort((a,b)=>b.score-a.score)[0];
+
+  const classChoice = CLASS_ENGINES
+    .map(item=>({...item,score:scoreEngine(item)}))
+    .sort((a,b)=>b.score-a.score)[0];
+
+  const titlePrimary = topKeys.find(k=>TITLE_PREFIXES[k]) || "adapt";
+  const titleSecondary = topKeys.find(k=>k!==titlePrimary && TITLE_SUFFIXES[k]) || titlePrimary;
+  const prefixList = TITLE_PREFIXES[titlePrimary];
+  const suffixList = TITLE_SUFFIXES[titleSecondary];
+
+  const stableSeed = state.answers
+    .map(a=>a.answer.length + a.answer.charCodeAt(0))
+    .reduce((a,b)=>a+b,0);
+
+  const prefix = prefixList[stableSeed % prefixList.length];
+  const suffix = suffixList[(stableSeed + state.name.length) % suffixList.length];
+  const title = `${prefix} ${suffix}`.replace(/\s+/g," ").trim();
+
+  const stat=(base,positive,negative=[])=>{
+    const gain=positive.reduce((s,k)=>s+Math.floor((state.scores[k]||0)/4),0);
+    const loss=negative.reduce((s,k)=>s+Math.floor((state.scores[k]||0)/8),0);
+    return Math.max(4,Math.min(20,base+gain-loss));
+  };
+
+  const stats={
+    Strength:stat(5,["protect","violence","sacrifice"],["caution"]),
+    Dexterity:stat(6,["adapt","risk","resourcefulness"],["discipline"]),
+    Constitution:stat(6,["survival","discipline","selfPreservation"],["fear"]),
+    Intelligence:stat(7,["strategy","knowledge","calculation","creativity"],["chaos"]),
+    Wisdom:stat(7,["empathy","intuition","patience","mercy"],["ego"]),
+    Charisma:stat(7,["social","leadership","manipulation","hope"],["independence"])
+  };
+
+  const traitMap={
+    protect:"Guardian Reflex",strategy:"False Choice",social:"Better Offer",
+    bond:"Monster Whisperer",survival:"Refuses to Die",adapt:"Adaptive Mind",
+    risk:"Danger Appetite",knowledge:"Forbidden Index",control:"Containment Instinct",
+    leadership:"Command Presence",mercy:"Merciful Threat",ambition:"Crown Hunger",
+    empathy:"Pain Reader",loyalty:"Last to Leave",curiosity:"Door Opener",
+    discipline:"Iron Routine",chaos:"Beautiful Disaster",violence:"Necessary Force",
+    sacrifice:"Final Volunteer",pragmatism:"Cold Arithmetic",deception:"Useful Lie",
+    honor:"Unbroken Word",patience:"Still Water",independence:"Solo Protocol",
+    faith:"Impossible Believer",vengeance:"Debt Memory",creativity:"Third Option",
+    caution:"Threat Audit",authority:"Command Voice",defiance:"System Error",
+    optimism:"Future Bias",ruthlessness:"Clean Cut",cooperation:"Party Glue",
+    intuition:"Bad Feeling",calculation:"Probability Sight",identity:"Unfinished Self",
+    fear:"Fear-Forged",humor:"Crisis Comedian",responsibility:"Takes the Blame",
+    manipulation:"Soft Leverage",restraint:"Held Blade",hope:"Hope Smuggler",
+    obsession:"Cannot Look Away",trust:"Open Hand",ego:"Main Character Energy",
+    resourcefulness:"Scrap Genius",justice:"Measured Consequence",
+    attachment:"Chosen Person",selfPreservation:"Exit Instinct",altruism:"Others First"
+  };
+
+  const traits=ranked
+    .filter(([k,v])=>v>0 && traitMap[k])
+    .slice(0,5)
+    .map(([k])=>traitMap[k]);
+
+  const flawByTop={
+    protect:"You will endanger yourself for those you claim as yours.",
+    knowledge:"You will open the book even after the book starts screaming.",
+    control:"You trust your plan after sensible people begin evacuating.",
+    mercy:"You keep offering second chances to people holding knives.",
+    ambition:"You can justify almost any risk if the outcome is large enough.",
+    loyalty:"You remain loyal several decisions after loyalty stops being rational.",
+    curiosity:"You confuse forbidden with personally addressed.",
+    defiance:"You reject manipulation so aggressively that reverse psychology becomes alarmingly effective.",
+    survival:"You can survive almost anything except admitting when survival is not enough.",
+    social:"You believe every monster has a price, including the ones that do not.",
+    strategy:"You keep planning after the room has already caught fire.",
+    sacrifice:"You volunteer yourself before checking whether anyone asked.",
+    vengeance:"You can wait a very long time for the wrong person to feel safe.",
+    hope:"You keep believing long after evidence files a formal complaint.",
+    responsibility:"You will carry blame that does not belong to you."
+  };
+
+  const dominant=ranked[0]?.[0]||"adapt";
+  const secondary=ranked[1]?.[0]||"survival";
+  const tertiary=ranked[2]?.[0]||"strategy";
+
+  const paragraphOpen={
+    protect:"You orient toward danger by deciding who stands behind you.",
+    strategy:"You rarely accept the problem exactly as it is presented.",
+    social:"You treat conflict as a negotiation before you treat it as a fight.",
+    bond:"You form attachments across lines most people consider sensible.",
+    survival:"You are built around continuation, not comfort.",
+    adapt:"You do not return from disaster unchanged, but you do return.",
+    knowledge:"You are most dangerous when someone tells you not to look.",
+    control:"You solve fear by trying to put structure around it.",
+    leadership:"People begin waiting for your decision before you realize they have chosen you.",
+    mercy:"Your compassion survives situations designed to kill it.",
+    ambition:"You look at power less as a prize than as a tool no one trustworthy is using.",
+    defiance:"You react badly to cages, including the invisible kind.",
+    curiosity:"You would rather face a terrible truth than live beside a locked door.",
+    sacrifice:"You are always calculating what part of yourself can be spent."
+  }[dominant] || "You are difficult to reduce to a single instinct.";
+
+  const paragraphMiddle={
+    protect:"You are protective without being passive.",
+    strategy:"You prefer leverage to force and options to obedience.",
+    social:"You notice wants, fears, and unspoken bargains quickly.",
+    bond:"You treat loyalty as a living responsibility.",
+    survival:"You improvise under pressure instead of waiting for perfect conditions.",
+    adapt:"You metabolize failure into new behavior.",
+    knowledge:"Information becomes a weapon almost immediately in your hands.",
+    control:"You are calmer when every threat has a name and a boundary.",
+    leadership:"You accept responsibility faster than authority.",
+    mercy:"You are capable of kindness without becoming harmless.",
+    ambition:"Your goals are large enough to frighten more cautious people.",
+    defiance:"You search for the option nobody intended to give you.",
+    curiosity:"Every warning sounds slightly like an invitation.",
+    sacrifice:"You understand cost, then step forward anyway."
+  }[secondary] || "Your secondary instincts complicate the obvious reading.";
+
+  const paragraphClose={
+    protect:"The Dungeon will test how many people you can carry before you finally choose yourself.",
+    strategy:"The Dungeon will keep changing the rules because it knows you are reading them.",
+    social:"The Dungeon will repeatedly put monsters in front of you that cannot be reasoned with.",
+    bond:"The Dungeon will weaponize attachment because it has noticed the pattern.",
+    survival:"The Dungeon will eventually ask what you are surviving for.",
+    adapt:"The Dungeon will struggle to punish you the same way twice.",
+    knowledge:"The Dungeon will hide its most dangerous doors behind your curiosity.",
+    control:"The Dungeon will create situations that cannot be contained.",
+    leadership:"The Dungeon will make every choice public and every consequence personal.",
+    mercy:"The Dungeon will try to make compassion feel foolish.",
+    ambition:"The Dungeon will offer exactly enough power to make refusal painful.",
+    defiance:"The Dungeon will mistake your refusal for a challenge. It is correct.",
+    curiosity:"The Dungeon will keep writing your name on sealed things.",
+    sacrifice:"The Dungeon will keep accepting pieces of you until you learn to stop offering them."
+  }[tertiary] || "The Dungeon has not yet decided how best to exploit this.";
+
+  const personality=`${paragraphOpen} ${paragraphMiddle} ${paragraphClose}`;
+
+  const quirkCandidates=QUIRKS
+    .map(q=>({...q,score:q.keys.reduce((s,k)=>s+(state.scores[k]||0),0)}))
+    .sort((a,b)=>b.score-a.score);
+
+  const quirks=[];
+  for(const q of quirkCandidates){
+    if(!quirks.includes(q.text)) quirks.push(q.text);
+    if(quirks.length===3) break;
+  }
+
   const total=Object.values(state.scores).reduce((a,b)=>a+b,0);
-  const survival=Math.min(96,Math.max(18,38+Math.floor(total/4)));
-  const rarity=Math.max(1,15-state.achievements.length);
+  const spread=ranked.slice(0,10).reduce((s,[,v])=>s+v,0);
+  const survival=Math.min(97,Math.max(14,31+Math.floor(
+    (stats.Constitution+stats.Wisdom+stats.Intelligence)/3*2.4
+  )));
+  const distinctiveness=Math.min(99,Math.max(10,
+    Math.round((spread/(total||1))*100 + state.achievements.length*4)
+  ));
+  const rarityNumber=Math.max(1,Math.round(18-distinctiveness/7));
+  const threat = Math.min(99,Math.round(
+    stats.Intelligence*1.4 + stats.Charisma + stats.Strength*.8 + state.scores.defiance*.3
+  ));
+
   return {
     crawlerNumber:number,
     name:state.name,
-    title:archetype.title,
-    type:archetype.type,
-    race:archetype.race,
-    className:archetype.className,
-    alignment:archetype.alignment,
-    quote:archetype.quote,
-    stats:{
-      Strength:stat(6,["protect","survival"]),
-      Dexterity:stat(7,["adapt","risk"]),
-      Constitution:stat(7,["survival","protect"]),
-      Intelligence:stat(9,["strategy","knowledge"]),
-      Wisdom:stat(9,["bond","adapt","mercy"]),
-      Charisma:stat(9,["social","leadership","ambition"])
-    },
-    traits:ranked.slice(0,4).map(([k])=>({
-      protect:"Guardian Reflex",strategy:"False Choice",social:"Better Offer",bond:"Monster Whisperer",
-      survival:"Refuses to Die",adapt:"Adaptive Mind",risk:"Danger Appetite",knowledge:"Forbidden Index",
-      control:"Containment Instinct",leadership:"Command Presence",mercy:"Merciful Threat",ambition:"Crown Hunger"
-    }[k])),
-    flaw: ranked[0][0]==="protect"?"You will endanger yourself for those you claim as yours.":
-      ranked[0][0]==="knowledge"?"You will open the book even after the book starts screaming.":
-      ranked[0][0]==="control"?"You trust your plan after sensible people begin evacuating.":
-      "You mistake survivable consequences for permission.",
+    title,
+    type:`${classChoice.name.includes("Broker")||classChoice.name.includes("Advocate")?"Social":"Adaptive"} / ${dominant[0].toUpperCase()+dominant.slice(1)}`,
+    race:race.name,
+    raceNote:race.note,
+    className:classChoice.name,
+    alignment:`${dominant[0].toUpperCase()+dominant.slice(1)} ${secondary[0].toUpperCase()+secondary.slice(1)}`,
+    quote:`“${title}” is not a compliment. It is a warning label.`,
+    stats,
+    traits,
+    flaw:flawByTop[dominant]||"You mistake survivable consequences for permission.",
+    personality,
+    quirks,
+    dominantTraits:ranked.slice(0,8).map(([name,value])=>({name,value})),
     achievements:state.achievements.map(k=>ACHIEVEMENTS[k][0]),
-    metrics:{survival,audience:state.audience,sponsor:Math.min(99,state.audience+state.achievements.length*3),rarity:`Top ${rarity}%`},
+    metrics:{
+      survival,
+      audience:state.audience,
+      sponsor:Math.min(99,Math.round(state.audience*.75+state.scores.ambition*.5+state.scores.social*.4)),
+      rarity:`Top ${rarityNumber}%`,
+      threat
+    },
     answers:state.answers,
     createdAt:new Date().toISOString()
   };
@@ -395,15 +744,18 @@ function renderCard(p,own=false){
         <div class="metric"><span>Survival Odds</span><b>${p.metrics.survival}%</b></div>
         <div class="metric"><span>Audience</span><b>${p.metrics.audience}%</b></div>
         <div class="metric"><span>Sponsor Appeal</span><b>${p.metrics.sponsor}%</b></div>
-        <div class="metric"><span>Rarity</span><b>${p.metrics.rarity}</b></div>
+        <div class="metric"><span>Threat Index</span><b>${p.metrics.threat||"?"}</b></div>
       </div>
       <div class="grid"><section><h4>Attributes</h4>${Object.entries(p.stats).map(([k,v])=>`<div class="stat"><span>${k}</span><b>${v}</b></div>`).join("")}</section>
       <section><h4>Starting Traits</h4>${p.traits.map(t=>`<div class="trait"><b>${t}</b><p>Behavioral pattern confirmed across multiple answers.</p></div>`).join("")}</section></div>
-      <div class="path"><div><span>Race Affinity</span><b>${p.race}</b></div><div><span>Class Candidate</span><b>${p.className}</b></div></div>
+      <div class="path"><div><span>Race Affinity</span><b>${p.race}</b><p>${p.raceNote||""}</p></div><div><span>Class Candidate</span><b>${p.className}</b></div></div>
       <blockquote>${p.quote}</blockquote>
+      ${p.personality?`<div class="profile-analysis"><b>PSYCHOLOGICAL SUMMARY:</b><p>${p.personality}</p></div>`:""}
       <div class="weakness"><b>Exploitable Flaw:</b> ${p.flaw}</div>
+      ${p.quirks?.length?`<div class="quirk-grid">${p.quirks.map(q=>`<div class="quirk-card"><b>DUNGEON QUIRK</b><p>${q}</p></div>`).join("")}</div>`:""}
+      ${p.dominantTraits?.length?`<div class="trait-spectrum"><h4>Hidden Trait Spectrum</h4>${p.dominantTraits.map(t=>`<div class="spectrum-row"><span>${t.name.replace(/([A-Z])/g," $1")}</span><div><i style="width:${Math.min(100,t.value*5)}%"></i></div><b>${t.value}</b></div>`).join("")}</div>`:""}
       <div class="achievement-list">${(p.achievements||[]).map(a=>`<span class="achievement-pill">${a}</span>`).join("")}</div>
-      <div class="ai-private-note"><b>LEAKED AI NOTE:</b> Subject profile is unusually coherent. This is either an advantage or evidence of a much larger problem.</div>
+      <div class="ai-private-note"><b>LEAKED AI NOTE:</b> This profile was generated from intersecting behavioral patterns, not a single archetype. Repeating the intake with materially different answers may produce an entirely different classification.</div>
       <footer>PROPERTY OF THE DUNGEON • CRAWLER NUMBER PERMANENT • DO NOT DUPLICATE</footer>
     </div>
     <div class="actions">

@@ -50,3 +50,23 @@ Your existing environment variables remain the same:
 - `SUPABASE_SERVICE_ROLE_KEY`
 
 After committing all files and running the SQL, trigger a new Netlify deployment.
+
+
+## Trait Engine Upgrade
+
+This version replaces the small fixed archetype system with:
+
+- 50 hidden personality dimensions
+- Positive and negative scoring interactions
+- 16 combinational race results
+- 24 combinational class results
+- Modular titles assembled from dominant traits
+- Personalized three-part psychological summaries
+- Stronger stat variation
+- Three personalized Dungeon quirks
+- Hidden trait-spectrum display
+- Threat index
+- Rarity based on distinctiveness and trait concentration
+- More varied flaws, alignments, race notes, traits, and dossier language
+
+Crawler outcomes are now determined by the combination and strength of many traits rather than by choosing one of a few complete preset profiles.
