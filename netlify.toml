@@ -32,12 +32,17 @@ status = 200
 
 [[redirects]]
 from = "/game-master"
-to = "/game-admin.html"
+to = "/director-admin.html"
 status = 200
 
 [[redirects]]
 from = "/game-master/"
-to = "/game-admin.html"
+to = "/director-admin.html"
+status = 200
+
+[[redirects]]
+from = "/director"
+to = "/director-admin.html"
 status = 200
 
 [[redirects]]
