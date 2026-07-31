@@ -1250,6 +1250,19 @@ function renderCard(p,own=false){
   </section>`;
   document.querySelector("#home").onclick=()=>location.href="/";
   document.querySelector("#share").onclick=()=>shareProfile(p);
+
+  const joinCampaignButton=document.querySelector("#join-campaign");
+  if(joinCampaignButton){
+    joinCampaignButton.onclick=()=>{
+      const crawlerNumber=Number(p.crawlerNumber);
+      if(!Number.isFinite(crawlerNumber)){
+        showBanner("CRAWLER NUMBER UNAVAILABLE");
+        return;
+      }
+      location.href=`/play?crawler=${encodeURIComponent(crawlerNumber)}`;
+    };
+  }
+
   if(own)document.querySelector("#download").onclick=downloadCard;
 }
 

@@ -1,0 +1,67 @@
+DUNGEONOS V1 — COMPLETE REPLACEMENT
+
+WHAT STAYS THE SAME
+- https://crawlerintake.netlify.app still opens Crawler Intake.
+- Existing /crawler/NUMBER dossier links still work.
+- Existing saved crawler profiles remain in Supabase.
+
+WHAT THIS ADDS
+- The dossier's Join Campaign button works.
+- Player gameplay: /play
+- Automated Dungeon Director: /game-master
+- Private crawler registry: /admin
+
+INSTALL
+
+1. SUPABASE
+Open SQL Editor -> New Query.
+Paste everything from SETUP-DATABASE.sql and press Run.
+Success means the database is ready.
+
+2. GITHUB ROOT
+Upload/replace every root file from this folder:
+index.html
+styles.css
+app.js
+play.html
+play.css
+play.js
+director-admin.html
+director-admin.css
+director-admin.js
+admin.html
+admin.css
+admin.js
+package.json
+netlify.toml
+
+3. GITHUB FUNCTIONS
+Inside netlify/functions, upload/replace:
+crawler-api.mjs
+director-api.mjs
+director-admin-api.mjs
+admin-api.mjs
+
+4. NETLIFY
+Keep these existing environment variables:
+SUPABASE_URL
+SUPABASE_SERVICE_ROLE_KEY
+DUNGEON_ADMIN_KEY
+
+Commit once and wait for the deploy to say Published.
+
+TEST
+A. Main intake:
+https://crawlerintake.netlify.app
+
+B. Open an existing crawler dossier and press Join Campaign.
+It should open /play with the crawler number already filled in.
+
+C. Director:
+https://crawlerintake.netlify.app/game-master
+
+D. Create campaign, let the player join, then press Start Director.
+
+IMPORTANT
+Do not delete your Supabase project or existing environment variables.
+This package replaces site files; it does not erase crawler records.
