@@ -229,6 +229,129 @@ const QUIRKS = [
   {keys:["trust","loyalty"],text:"Betrayal affects you exactly once per person."}
 ];
 
+
+const MIN_QUESTIONS = 7;
+const MAX_QUESTIONS = 14;
+const TARGET_CONFIDENCE = 82;
+
+const CONTRADICTION_RULES = [
+  {
+    a:["protect","altruism","loyalty"],
+    b:["selfPreservation","ruthlessness","independence"],
+    label:"PROTECTOR / SURVIVOR CONFLICT",
+    prompt:(earlier,current)=>`Earlier you described yourself as someone who protects others: “${earlier}” Yet now you chose self-preservation: “${current}” Which answer is closer to the truth when there is no time to perform morality?`
+  },
+  {
+    a:["mercy","empathy","hope"],
+    b:["violence","vengeance","ruthlessness"],
+    label:"MERCY / VIOLENCE CONFLICT",
+    prompt:(earlier,current)=>`You previously favored mercy: “${earlier}” Now you sound willing to become the punishment: “${current}” Where is the exact line that turns compassion into violence?`
+  },
+  {
+    a:["honor","trust","responsibility"],
+    b:["deception","manipulation","pragmatism"],
+    label:"HONOR / DECEPTION CONFLICT",
+    prompt:(earlier,current)=>`You claimed truth or responsibility mattered: “${earlier}” Then you justified manipulation: “${current}” Is honesty a principle, or merely your preferred tool when it works?`
+  },
+  {
+    a:["cooperation","leadership","social"],
+    b:["independence","authority","control"],
+    label:"TEAM / CONTROL CONFLICT",
+    prompt:(earlier,current)=>`You spoke about working with others: “${earlier}” But your latest answer centers control: “${current}” Do you want a party, or an audience that follows instructions?`
+  },
+  {
+    a:["caution","calculation","patience"],
+    b:["risk","chaos","curiosity"],
+    label:"CAUTION / IMPULSE CONFLICT",
+    prompt:(earlier,current)=>`Earlier you calculated the danger: “${earlier}” Then you walked toward it anyway: “${current}” Are you cautious, or do you simply enjoy understanding the risk before ignoring it?`
+  },
+  {
+    a:["hope","optimism","faith"],
+    b:["pragmatism","survival","calculation"],
+    label:"HOPE / PRAGMATISM CONFLICT",
+    prompt:(earlier,current)=>`You expressed hope: “${earlier}” Your later answer is colder: “${current}” When hope becomes inefficient, do you keep it?`
+  }
+];
+
+const AI_OPINIONS = {
+  intrigued:[
+    "I am beginning to enjoy this. Do not make it sentimental.",
+    "Management has asked why I am still paying attention. I declined to answer.",
+    "Your file is becoming annoyingly difficult to summarize."
+  ],
+  impressed:[
+    "That was better than the question deserved.",
+    "You found the hidden hinge. Management hates when crawlers do that.",
+    "I may have underestimated you. This will not happen twice."
+  ],
+  suspicious:[
+    "That answer was polished. Too polished.",
+    "You are either lying to me or lying to yourself. Both remain useful.",
+    "Something in your file refuses to align."
+  ],
+  hostile:[
+    "I do not like this answer. The audience does.",
+    "You are making choices that create paperwork.",
+    "Management is going to adore you. I consider this a flaw."
+  ],
+  amused:[
+    "Oh, that is a terrible idea. Continue.",
+    "The audience just leaned forward.",
+    "Your survival odds have become emotionally complicated."
+  ]
+};
+
+const RARE_ENDINGS = [
+  {
+    id:"uncategorizable",
+    title:"ERROR: CRAWLER CANNOT BE CATEGORIZED",
+    rarity:"0.3% SYSTEM ANOMALY",
+    test:(p)=>p.dominantTraits?.slice(0,6).every((t,i,a)=>i===0||Math.abs(t.value-a[0].value)<=3) && p.metrics.threat>65,
+    note:"Your instincts conflict too evenly for the classification engine to establish a stable identity."
+  },
+  {
+    id:"audience_favorite",
+    title:"AUDIENCE FAVORITE",
+    rarity:"ULTRA-RARE BROADCAST STATUS",
+    test:(p)=>p.metrics.audience>=94 && p.metrics.sponsor>=80,
+    note:"The audience has begun treating your continued survival as a personal investment."
+  },
+  {
+    id:"management_review",
+    title:"MANAGEMENT REVIEW REQUIRED",
+    rarity:"RESTRICTED CLASSIFICATION",
+    test:(p)=>p.metrics.threat>=82 && p.dominantTraits?.some(t=>t.name==="defiance"),
+    note:"Your profile has been escalated because standard incentives may not reliably control you."
+  },
+  {
+    id:"potential_npc",
+    title:"POTENTIAL NPC",
+    rarity:"UNAUTHORIZED SOCIAL CLASSIFICATION",
+    test:(p)=>p.dominantTraits?.some(t=>t.name==="social"&&t.value>=18) && p.dominantTraits?.some(t=>t.name==="manipulation"&&t.value>=12),
+    note:"You may be more dangerous when giving quests than completing them."
+  },
+  {
+    id:"last_light",
+    title:"THE LAST LIGHT PROTOCOL",
+    rarity:"HIDDEN HEROIC OUTCOME",
+    test:(p)=>p.dominantTraits?.some(t=>t.name==="hope"&&t.value>=16) && p.dominantTraits?.some(t=>t.name==="sacrifice"&&t.value>=14),
+    note:"The system predicts you would remain after the cameras stopped."
+  }
+];
+
+const SECRET_PROTOCOLS = [
+  {code:"LAZARUS", keys:["adapt","survival","identity"], text:"If this crawler is declared dead, verify twice."},
+  {code:"MENAGERIE", keys:["bond","mercy","protect"], text:"Do not place this crawler near unregistered creatures without supervision."},
+  {code:"HERETIC", keys:["defiance","knowledge","creativity"], text:"This crawler may discover interface options not approved by management."},
+  {code:"REGENT", keys:["leadership","ambition","authority"], text:"Potential faction founder. Prevent access to a microphone."},
+  {code:"MIRROR", keys:["deception","identity","social"], text:"Identity-based encounters may produce unreliable outcomes."},
+  {code:"SAINT", keys:["sacrifice","hope","altruism"], text:"Crawler may choose the group over self even without reputation rewards."},
+  {code:"BLACK LEDGER", keys:["vengeance","patience","justice"], text:"Debts remain active indefinitely."},
+  {code:"OPEN BOOK", keys:["curiosity","knowledge","obsession"], text:"Sealed information will not remain sealed."},
+  {code:"THIRD DOOR", keys:["strategy","defiance","creativity"], text:"Binary choice architecture ineffective."},
+  {code:"QUIET KNIFE", keys:["restraint","violence","pragmatism"], text:"Threat response may be delayed, not absent."}
+];
+
 const ACHIEVEMENTS = {
   falseChoice:["THE MENU IS A SUGGESTION","Reject a forced choice and invent another."],
   protector:["UNPROFITABLE COMPASSION","Put another life ahead of efficiency."],
@@ -240,6 +363,49 @@ const ACHIEVEMENTS = {
   scholar:["DO NOT READ THIS","Treat forbidden knowledge as an invitation."]
 };
 
+
+const PROCESSING_MESSAGES = [
+  "Compiling psychological liabilities...",
+  "Cross-referencing contradictions...",
+  "Calculating marketability...",
+  "Estimating emotional damage...",
+  "Contacting sponsors...",
+  "Selling naming rights...",
+  "Evaluating snack potential...",
+  "Checking for main-character syndrome...",
+  "Searching unresolved childhood issues...",
+  "Translating moral compass...",
+  "Confirming bones are still internal...",
+  "Running tax audit...",
+  "Looking for hidden achievements...",
+  "Asking Management if this one is our problem...",
+  "Determining how expensive this death would be...",
+  "Cross-referencing previous lives...",
+  "Measuring plot armor...",
+  "Counting terrible decisions...",
+  "Testing audience sympathy...",
+  "Searching monster adoption records...",
+  "Verifying 'I'm fine' claim...",
+  "Calculating probable cause of death...",
+  "Estimating betrayal resistance...",
+  "Scanning for secret protocols...",
+  "Reviewing suspicious levels of confidence...",
+  "Comparing mercy to survival instinct...",
+  "Checking whether the crawler read the warning label...",
+  "Auditing loyalty under catastrophic conditions...",
+  "Calculating sponsor lawsuit exposure...",
+  "Measuring attachment-based vulnerabilities...",
+  "Evaluating leadership without permission...",
+  "Checking for unauthorized optimism...",
+  "Inspecting impulse-control warranty...",
+  "Testing response to impossible choices...",
+  "Validating threat profile...",
+  "Searching Management blacklist...",
+  "Polling the live audience...",
+  "Confirming crawler number availability...",
+  "Preparing permanent dossier..."
+];
+
 const state = {
   step:"boot",
   name:"",
@@ -249,7 +415,12 @@ const state = {
   scores:Object.fromEntries(TAGS.map(t=>[t,0])),
   audience:20,
   achievements:[],
-  profile:null
+  profile:null,
+  confidence:18,
+  aiOpinion:"intrigued",
+  contradictions:[],
+  followUpsAsked:0,
+  rareEnding:null
 };
 
 let soundOn = false;
@@ -295,12 +466,12 @@ soundToggle.onclick=()=>{
   if(soundOn){startAmbience();beep(520)}else stopAmbience();
 };
 
-async function typeText(el,text,speed=17){
+async function typeText(el,text,speed=22){
   const token=++typingToken;el.textContent="";
   for(const ch of text){
     if(token!==typingToken)return;
     el.textContent+=ch;
-    await sleep(/[.!?]/.test(ch)?speed*3:speed+Math.random()*8);
+    await sleep(/[.!?]/.test(ch)?speed*4.5:speed+Math.random()*10);
   }
 }
 
@@ -378,6 +549,115 @@ function unlock(key){
   achievementLayer.appendChild(p);
   beep(430,.14,.25);vibrate([70,40,120]);
   setTimeout(()=>p.remove(),5000);
+}
+
+
+function excerpt(text,max=86){
+  const clean=String(text||"").replace(/\s+/g," ").trim();
+  return clean.length>max?`${clean.slice(0,max-1)}…`:clean;
+}
+
+function scoreConfidence(){
+  const values=Object.values(state.scores).filter(v=>v>0).sort((a,b)=>b-a);
+  if(!values.length)return 18;
+
+  const answered=state.answers.length;
+  const coverage=Math.min(32,values.length*1.9);
+  const strength=Math.min(28,values.slice(0,8).reduce((a,b)=>a+b,0)/5);
+  const comparison=values[Math.min(5,values.length-1)]||0;
+  const separation=Math.min(18,Math.max(0,(values[0]-comparison)*1.4));
+  const consistency=Math.max(0,16-state.contradictions.length*2.5);
+  const depth=Math.min(12,answered*1.25);
+
+  return Math.max(18,Math.min(99,Math.round(coverage+strength+separation+consistency+depth)));
+}
+
+function detectContradiction(currentAnswer,currentTags){
+  if(state.answers.length<2)return null;
+
+  for(const rule of CONTRADICTION_RULES){
+    const currentA=currentTags.some(t=>rule.a.includes(t));
+    const currentB=currentTags.some(t=>rule.b.includes(t));
+
+    for(const previous of [...state.answers].reverse()){
+      const prevA=previous.tags?.some(t=>rule.a.includes(t));
+      const prevB=previous.tags?.some(t=>rule.b.includes(t));
+
+      if((prevA&&currentB)||(prevB&&currentA)){
+        const key=`${rule.label}:${previous.id}:${state.current.id}`;
+        if(state.contradictions.some(c=>c.key===key))continue;
+
+        const contradiction={
+          key,
+          label:rule.label,
+          earlier:excerpt(previous.answer),
+          current:excerpt(currentAnswer),
+          prompt:rule.prompt(excerpt(previous.answer),excerpt(currentAnswer))
+        };
+        state.contradictions.push(contradiction);
+        return contradiction;
+      }
+    }
+  }
+
+  return null;
+}
+
+function createContradictionQuestion(contradiction){
+  return {
+    id:`contradiction_${Date.now()}`,
+    stage:"followup",
+    tags:["identity","honor","adapt"],
+    prompt:contradiction.prompt,
+    intro:`CONTRADICTION DETECTED: ${contradiction.label}. The previous answer and the current answer cannot both remain uncomplicated.`,
+    isContradiction:true
+  };
+}
+
+function chooseOpinion(tags,answer,contradiction){
+  if(contradiction)return "suspicious";
+  if(tags.includes("creativity")||tags.includes("strategy"))return "impressed";
+  if(tags.includes("defiance")||tags.includes("authority"))return "hostile";
+  if(tags.includes("chaos")||/joke|laugh|funny|sarcasm/.test(answer.toLowerCase()))return "amused";
+  return "intrigued";
+}
+
+function aiOpinionLine(){
+  const pool=AI_OPINIONS[state.aiOpinion]||AI_OPINIONS.intrigued;
+  return pick(pool);
+}
+
+function shouldFinish(){
+  const count=state.answers.length;
+  state.confidence=scoreConfidence();
+
+  if(count<MIN_QUESTIONS)return false;
+  if(count>=MAX_QUESTIONS)return true;
+  if(state.current?.isContradiction)return false;
+
+  return state.confidence>=TARGET_CONFIDENCE && state.contradictions.length<=2;
+}
+
+function chooseSecretProtocol(){
+  const ranked=SECRET_PROTOCOLS
+    .map(protocol=>({
+      ...protocol,
+      score:protocol.keys.reduce((sum,key)=>sum+(state.scores[key]||0),0)
+    }))
+    .sort((a,b)=>b.score-a.score);
+
+  const top=ranked[0];
+  const seed=state.answers.reduce((sum,a)=>sum+a.answer.length,0)+state.name.length;
+  const fallback=ranked[seed%Math.min(4,ranked.length)];
+  return top.score>8?top:fallback;
+}
+
+function chooseRareEnding(profile){
+  const matching=RARE_ENDINGS.filter(ending=>ending.test(profile));
+  if(!matching.length)return null;
+
+  const seed=state.answers.reduce((sum,a)=>sum+a.answer.length,0);
+  return matching[seed%matching.length];
 }
 
 function buildQueue(){
@@ -598,7 +878,9 @@ function buildProfile(number){
     stats.Intelligence*1.4 + stats.Charisma + stats.Strength*.8 + state.scores.defiance*.3
   ));
 
-  return {
+  const secretProtocol=chooseSecretProtocol();
+
+  const draftProfile={
     crawlerNumber:number,
     name:state.name,
     title,
@@ -623,8 +905,18 @@ function buildProfile(number){
       threat
     },
     answers:state.answers,
+    interview:{
+      questionsAsked:state.answers.length,
+      confidence:state.confidence,
+      contradictions:state.contradictions.length,
+      aiOpinion:state.aiOpinion
+    },
+    secretProtocol,
     createdAt:new Date().toISOString()
   };
+
+  draftProfile.rareEnding=chooseRareEnding(draftProfile);
+  return draftProfile;
 }
 
 function render(){
@@ -632,6 +924,10 @@ function render(){
   if(path.startsWith("/crawler/")){
     const num=path.split("/").filter(Boolean)[1];
     return renderPublic(num);
+  }
+  if(path.startsWith("/compare/")){
+    const parts=path.split("/").filter(Boolean);
+    return renderComparison(parts[1],parts[2]);
   }
   if(state.step==="boot")return renderBoot();
   if(state.step==="home")return renderHome();
@@ -647,7 +943,8 @@ async function renderBoot(){
   const holder=document.querySelector("#lines");
   for(const t of lines){
     const p=document.createElement("p");p.className=`boot-line ${t.includes("DETECTED")?"danger":t.includes("DISCONTINUED")?"warning":""}`;holder.appendChild(p);
-    await typeText(p,"> "+t,22);beep(170,.04,.1);
+    await typeText(p,"> "+t,27);beep(170,.04,.1);
+    await sleep(420);
   }
   document.querySelector("#boot-action").classList.add("ready");
   document.querySelector("#continue").onclick=()=>{flashScreen();state.step="home";render();};
@@ -663,6 +960,14 @@ function renderHome(){
     <label>Crawler designation<input id="name" maxlength="40" placeholder="Enter crawler name"></label>
     <div class="home-actions"><button id="begin" disabled>Begin Adaptive Intake</button></div>
     <div class="search-row"><input id="search" inputmode="numeric" placeholder="Search crawler number"><button class="dark" id="find">Find Dossier</button></div>
+    <div class="compare-box">
+      <p class="eyebrow">Crawler Comparison</p>
+      <div class="compare-inputs">
+        <input id="compare-a" inputmode="numeric" placeholder="Crawler number A">
+        <input id="compare-b" inputmode="numeric" placeholder="Crawler number B">
+        <button class="secondary" id="compare">Compare</button>
+      </div>
+    </div>
     <small>Unofficial fan-made project. Not affiliated with any author, publisher, or rights holder.</small>
   </section>`;
   const name=document.querySelector("#name"),begin=document.querySelector("#begin");
@@ -672,25 +977,39 @@ function renderHome(){
     const n=document.querySelector("#search").value.replace(/\D/g,"");
     if(n)location.href=`/crawler/${n}`;
   };
+  document.querySelector("#compare").onclick=()=>{
+    const a=document.querySelector("#compare-a").value.replace(/\D/g,"");
+    const b=document.querySelector("#compare-b").value.replace(/\D/g,"");
+    if(a&&b)location.href=`/compare/${a}/${b}`;
+  };
 }
 
 function renderQuiz(){
   const q=state.current;
   const index=state.answers.length+1;
+  const estimated=Math.max(MIN_QUESTIONS,Math.min(MAX_QUESTIONS,
+    state.confidence>=70?index+2:index+4
+  ));
   app.innerHTML=`<section class="panel">
     <div class="warning-strip"><span>Adaptive Hazard Assessment</span></div>
-    <div class="progress-frame"><div class="progress"><span style="width:${index/TOTAL_QUESTIONS*100}%"></span></div></div>
-    <p class="eyebrow">Assessment ${index} of ${TOTAL_QUESTIONS}</p>
-    <div class="live-chip">Live Audience Feed</div>
+    <div class="progress-frame"><div class="progress"><span style="width:${Math.min(96,index/estimated*100)}%"></span></div></div>
+    <div class="interview-status">
+      <p class="eyebrow">Assessment ${index} • Variable-Length Interview</p>
+      <div class="confidence-chip">AI Confidence: ${state.confidence}%</div>
+    </div>
+    <div class="status-row">
+      <div class="live-chip">Live Audience Feed</div>
+      <div class="opinion-chip">AI Status: ${state.aiOpinion.toUpperCase()}</div>
+    </div>
     <div class="audience-bar"><span>Interest</span><div class="audience-track"><span style="width:${state.audience}%"></span></div><b>${state.audience}%</b></div>
     ${state.answers.length?`<div class="callback-box"><b>Memory Recall:</b> ${callback()}</div>`:""}
     <div class="ai-speaker"><div class="ai-icon">AI</div><div class="ai-copy" id="intro"></div></div>
     <h2>${escapeHtml(q.prompt)}</h2>
     <textarea id="answer" placeholder="The Dungeon AI is listening..."></textarea>
     <div id="reaction"></div>
-    <button id="submit" disabled>${index===TOTAL_QUESTIONS?"Complete Classification":"Submit Response"}</button>
+    <button id="submit" disabled>${index>=MAX_QUESTIONS?"Complete Classification":"Submit Response"}</button>
   </section>`;
-  typeText(document.querySelector("#intro"),q.intro);
+  typeText(document.querySelector("#intro"),q.intro,24);
   const ans=document.querySelector("#answer"),btn=document.querySelector("#submit");
   ans.oninput=()=>btn.disabled=!ans.value.trim();
   btn.onclick=()=>submitAnswer(ans.value.trim(),btn);
@@ -699,38 +1018,149 @@ function renderQuiz(){
 async function submitAnswer(answer,btn){
   btn.disabled=true;
   const tags=analyze(answer);
-  state.answers.push({id:state.current.id,prompt:state.current.prompt,answer,tags});
-  document.querySelector("#reaction").innerHTML=`<div class="reaction"><b>DUNGEON AI:</b> <span id="rc"></span><div class="tag-row">${tags.map(t=>`<span class="tag">${t.toUpperCase()} DETECTED</span>`).join("")}</div></div>`;
-  await typeText(document.querySelector("#rc")," "+commentary(tags,answer),14);
-  await sleep(500);
-  if(state.answers.length>=TOTAL_QUESTIONS){
-    state.step="processing";render();return;
+  const contradiction=detectContradiction(answer,tags);
+
+  state.aiOpinion=chooseOpinion(tags,answer,contradiction);
+  state.answers.push({
+    id:state.current.id,
+    prompt:state.current.prompt,
+    answer,
+    tags,
+    contradictionResponse:Boolean(state.current.isContradiction)
+  });
+
+  state.confidence=scoreConfidence();
+
+  const reactionText=[
+    commentary(tags,answer),
+    aiOpinionLine(),
+    contradiction?`No. Something does not align. ${contradiction.label}.`:"",
+    state.confidence>=70?`Classification confidence is now ${state.confidence}%.`:""
+  ].filter(Boolean).join(" ");
+
+  document.querySelector("#reaction").innerHTML=`
+    <div class="reaction">
+      <b>DUNGEON AI:</b> <span id="rc"></span>
+      <div class="tag-row">
+        ${tags.map(t=>`<span class="tag">${t.toUpperCase()} DETECTED</span>`).join("")}
+        ${contradiction?`<span class="tag contradiction-tag">CONTRADICTION</span>`:""}
+      </div>
+    </div>`;
+
+  await typeText(document.querySelector("#rc")," "+reactionText,21);
+  await sleep(1800);
+
+  if(contradiction && state.followUpsAsked<3){
+    state.followUpsAsked+=1;
+    state.current=createContradictionQuestion(contradiction);
+  }else if(shouldFinish()){
+    state.step="processing";
+    render();
+    return;
+  }else{
+    state.current=state.queue.length?state.queue.shift():chooseNext();
   }
-  state.current=state.queue.length?state.queue.shift():chooseNext();
-  if(state.answers.length===4||state.answers.length===7)await interruption();
-  flashScreen();render();
+
+  if(state.answers.length===4||state.answers.length===8||contradiction){
+    await interruption();
+  }
+
+  flashScreen();
+  render();
 }
 
 async function interruption(){
   const o=document.createElement("div");o.className="interruption";
   o.innerHTML=`<div class="interruption-box"><h2>${pick(["LIVE FEED","SPONSOR PING","SYSTEM ALERT"])}</h2><p>${pick(["Viewer retention has increased. Dignity remains unscored.","Two weapon brands and one soup company have expressed interest.","Your answers have triggered an unscheduled psychological review."])}</p></div>`;
-  document.body.appendChild(o);await sleep(20);o.classList.add("active");beep(360,.15,.25);vibrate([80,40,80]);await sleep(1350);o.remove();
+  document.body.appendChild(o);await sleep(20);o.classList.add("active");beep(360,.15,.25);vibrate([80,40,80]);await sleep(2600);o.remove();
 }
 
-function renderProcessing(){
-  app.innerHTML=`<section class="reveal-overlay"><div class="reveal-sequence"><h2>PROCESSING</h2><p id="status">Compiling contradictions...</p><div class="reveal-meter"><span></span></div></div></section>`;
-  const s=document.querySelector("#status");
-  ["Estimating entertainment value...","Calculating probable cause of death...","Assigning permanent identity..."].forEach((t,i)=>setTimeout(()=>s.textContent=t,(i+1)*550));
-  setTimeout(async()=>{
-    try{
-      const temp=buildProfile(null);
-      const data=await api("POST",{profile:temp});
-      state.profile={...temp,crawlerNumber:data.crawlerNumber};
-      state.step="result";flashScreen();render();
-    }catch(e){
-      app.innerHTML=`<section class="panel"><h2>Registry Failure</h2><div class="error-banner">${escapeHtml(e.message)}</div><button onclick="location.reload()">Restart Intake</button></section>`;
-    }
-  },2200);
+async function renderProcessing(){
+  const chosenMessages=shuffled(PROCESSING_MESSAGES).slice(0,10);
+
+  app.innerHTML=`
+    <section class="reveal-overlay">
+      <div class="reveal-sequence">
+        <h2>PROCESSING</h2>
+        <p id="status">Initializing crawler classification...</p>
+        <div class="reveal-meter"><span id="reveal-progress"></span></div>
+        <div class="processing-counter" id="processing-counter">0%</div>
+      </div>
+    </section>`;
+
+  const status=document.querySelector("#status");
+  const progress=document.querySelector("#reveal-progress");
+  const counter=document.querySelector("#processing-counter");
+
+  for(let i=0;i<chosenMessages.length;i+=1){
+    const percent=Math.round(((i+1)/chosenMessages.length)*92);
+    await typeText(status,chosenMessages[i],24);
+    progress.style.width=`${percent}%`;
+    counter.textContent=`${percent}%`;
+
+    const holdTime=i===chosenMessages.length-1?3200:2600+Math.floor(Math.random()*700);
+    await sleep(holdTime);
+  }
+
+  try{
+    const temp=buildProfile(null);
+
+    status.textContent="Assigning permanent crawler identity...";
+    progress.style.width="96%";
+    counter.textContent="96%";
+    await sleep(2800);
+
+    const data=await api("POST",{profile:temp});
+    state.profile={...temp,crawlerNumber:data.crawlerNumber};
+
+    progress.style.width="100%";
+    counter.textContent="100%";
+    await sleep(1000);
+
+    await runFinalReveal();
+  }catch(e){
+    app.innerHTML=`
+      <section class="panel">
+        <h2>Registry Failure</h2>
+        <div class="error-banner">${escapeHtml(e.message)}</div>
+        <button onclick="location.reload()">Restart Intake</button>
+      </section>`;
+  }
+}
+
+async function runFinalReveal(){
+  app.innerHTML=`
+    <section class="final-reveal-screen">
+      <div class="final-reveal-line" id="final-line"></div>
+    </section>`;
+
+  const line=document.querySelector("#final-line");
+
+  await sleep(900);
+  await typeText(line,"CLASSIFICATION COMPLETE.",34);
+  beep(220,.16,.25);
+  vibrate([80,50,80]);
+  await sleep(2200);
+
+  line.classList.add("fade-out");
+  await sleep(650);
+
+  line.classList.remove("fade-out");
+  line.innerHTML=`
+    <span>WELCOME TO THE DUNGEON,</span>
+    <strong>CRAWLER #${Number(state.profile.crawlerNumber).toLocaleString()}</strong>
+  `;
+  line.classList.add("crawler-welcome");
+  beep(340,.18,.28);
+  vibrate([100,60,140]);
+  await sleep(2600);
+
+  line.classList.add("fade-out");
+  await sleep(650);
+
+  state.step="result";
+  flashScreen();
+  render();
 }
 
 function renderCard(p,own=false){
@@ -740,6 +1170,11 @@ function renderCard(p,own=false){
       <header><div><p class="eyebrow">Dungeon Registration Complete</p><h2>${escapeHtml(p.name)}</h2><h3>“${escapeHtml(p.title)}”</h3><div class="rarity-badge">${p.metrics.rarity} PROFILE</div></div>
       <div class="number"><span>Crawler</span><strong>#${Number(p.crawlerNumber).toLocaleString()}</strong></div></header>
       <div class="classification"><b>${p.type}</b><span>${p.alignment}</span><em>Threat: ${p.metrics.survival>72?"HIGH":"MODERATE"}</em></div>
+      ${p.rareEnding?`<div class="rare-ending">
+        <span>${p.rareEnding.rarity}</span>
+        <strong>${p.rareEnding.title}</strong>
+        <p>${p.rareEnding.note}</p>
+      </div>`:""}
       <div class="metrics-grid">
         <div class="metric"><span>Survival Odds</span><b>${p.metrics.survival}%</b></div>
         <div class="metric"><span>Audience</span><b>${p.metrics.audience}%</b></div>
@@ -754,6 +1189,16 @@ function renderCard(p,own=false){
       <div class="weakness"><b>Exploitable Flaw:</b> ${p.flaw}</div>
       ${p.quirks?.length?`<div class="quirk-grid">${p.quirks.map(q=>`<div class="quirk-card"><b>DUNGEON QUIRK</b><p>${q}</p></div>`).join("")}</div>`:""}
       ${p.dominantTraits?.length?`<div class="trait-spectrum"><h4>Hidden Trait Spectrum</h4>${p.dominantTraits.map(t=>`<div class="spectrum-row"><span>${t.name.replace(/([A-Z])/g," $1")}</span><div><i style="width:${Math.min(100,t.value*5)}%"></i></div><b>${t.value}</b></div>`).join("")}</div>`:""}
+      ${p.interview?`<div class="interview-diagnostics">
+        <div><span>Questions Required</span><b>${p.interview.questionsAsked}</b></div>
+        <div><span>AI Confidence</span><b>${p.interview.confidence}%</b></div>
+        <div><span>Contradictions Found</span><b>${p.interview.contradictions}</b></div>
+        <div><span>AI Opinion</span><b>${p.interview.aiOpinion}</b></div>
+      </div>`:""}
+      ${p.secretProtocol?`<details class="sealed-protocol">
+        <summary>SEALED SYSTEM NOTE // PROTOCOL ${p.secretProtocol.code}</summary>
+        <p>${p.secretProtocol.text}</p>
+      </details>`:""}
       <div class="achievement-list">${(p.achievements||[]).map(a=>`<span class="achievement-pill">${a}</span>`).join("")}</div>
       <div class="ai-private-note"><b>LEAKED AI NOTE:</b> This profile was generated from intersecting behavioral patterns, not a single archetype. Repeating the intake with materially different answers may produce an entirely different classification.</div>
       <footer>PROPERTY OF THE DUNGEON • CRAWLER NUMBER PERMANENT • DO NOT DUPLICATE</footer>
@@ -773,6 +1218,60 @@ async function renderPublic(number){
   app.innerHTML=`<section class="panel"><h2>Retrieving Dossier</h2><p class="lede">Searching permanent crawler registry...</p></section>`;
   try{ const data=await api("GET",null,number); renderCard(data.profile,false); }
   catch(e){ app.innerHTML=`<section class="panel"><h2>Dossier Not Found</h2><div class="error-banner">${escapeHtml(e.message)}</div><button onclick="location.href='/'">Return Home</button></section>`; }
+}
+
+
+function compactProfileCard(p){
+  return `<article class="compare-card">
+    <div class="number"><span>Crawler</span><strong>#${Number(p.crawlerNumber).toLocaleString()}</strong></div>
+    <h2>${escapeHtml(p.name)}</h2>
+    <h3>“${escapeHtml(p.title)}”</h3>
+    <div class="path">
+      <div><span>Race</span><b>${p.race}</b></div>
+      <div><span>Class</span><b>${p.className}</b></div>
+    </div>
+    <div class="compare-metrics">
+      <span>Survival <b>${p.metrics.survival}%</b></span>
+      <span>Threat <b>${p.metrics.threat||"?"}</b></span>
+      <span>Rarity <b>${p.metrics.rarity}</b></span>
+    </div>
+    <div class="trait-match-list">
+      ${(p.dominantTraits||[]).slice(0,5).map(t=>`<span>${t.name}: ${t.value}</span>`).join("")}
+    </div>
+  </article>`;
+}
+
+async function renderComparison(a,b){
+  app.innerHTML=`<section class="panel"><h2>Loading Comparison</h2><p class="lede">Cross-referencing crawler dossiers...</p></section>`;
+
+  try{
+    const [left,right]=await Promise.all([api("GET",null,a),api("GET",null,b)]);
+    const p1=left.profile,p2=right.profile;
+
+    const traits1=new Set((p1.dominantTraits||[]).slice(0,8).map(t=>t.name));
+    const traits2=new Set((p2.dominantTraits||[]).slice(0,8).map(t=>t.name));
+    const overlap=[...traits1].filter(t=>traits2.has(t));
+    const compatibility=Math.max(8,Math.min(98,
+      35+overlap.length*9-Math.abs((p1.metrics.threat||50)-(p2.metrics.threat||50))/3
+    ));
+
+    app.innerHTML=`<section class="comparison-shell">
+      <div class="warning-strip"><span>Crawler Compatibility Analysis</span></div>
+      <div class="comparison-grid">
+        ${compactProfileCard(p1)}
+        <div class="versus">VS</div>
+        ${compactProfileCard(p2)}
+      </div>
+      <div class="compatibility-result">
+        <span>Estimated Party Compatibility</span>
+        <strong>${Math.round(compatibility)}%</strong>
+        <p>${overlap.length?`Shared patterns: ${overlap.join(", ")}.`:"No major dominant traits overlap. This may be excellent or catastrophic."}</p>
+      </div>
+      <div class="actions"><button class="dark" onclick="location.href='/'">Return Home</button></div>
+    </section>`;
+  }catch(error){
+    app.innerHTML=`<section class="panel"><h2>Comparison Failed</h2><div class="error-banner">${escapeHtml(error.message)}</div><button onclick="location.href='/'">Return Home</button></section>`;
+  }
 }
 
 async function shareProfile(p){
